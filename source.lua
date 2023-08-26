@@ -78,7 +78,7 @@ local ArgumentParser = {} do
         for _, k in next, args do
             table.insert(types, k)
         end
-        return setmetatable({args = args, types = types})
+        return setmetatable({args = args, types = types}, {__index = ArgumentParser})
     end
 
     function ArgumentParser:Validate(out: any, index: number)
@@ -103,7 +103,7 @@ local Command = {} do
             Command = command,
             Arguments = args,
             Callback = callback,
-        })
+        }, {__index = ParsedCommand})
     end
 
     function ParsedCommand:Parse()
