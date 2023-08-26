@@ -245,6 +245,9 @@ local Dispatcher = {} do
 
         local arguments = splitString(text)
         local commandName = table.remove(arguments, 1)
+        if commandName == nil then
+            return false, "Empty field, please use the help command to see all commands."
+        end
         local commandObject = CommandStorageAPI.GetCommand(commandName)
         if commandObject then
             local command = commandObject:FromArguments(arguments)
@@ -255,7 +258,7 @@ local Dispatcher = {} do
                 return false, errorText
             end
         else
-            return false, string.format("%s is not a valid command, please use the help command to see all built-in commmands.", commandName)
+            return false, string.format("%s is not a valid command, please use the help command to see all commmands.", commandName)
         end
     end
 
