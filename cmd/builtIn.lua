@@ -1,17 +1,48 @@
 local Players = game:GetService("Players")
 local TeleportService = game:GetService("TeleportService")
+local UserInputService = game:GetService("UserInputService")
 
 local GLOBAL = getgenv()
 
+local DEFAULT_RAY_DISTANCE = 2000
 local IMPORTED_PACKAGES = {}
 local IGNORE_PACKAGES = {'builtIn'}
-local KEYBINDS = {
+GLOBAL.GenericKeybinds = {
     Teleport = Enum.KeyCode.T,
 }
+
+if GLOBAL.GenericConnections and #GLOBAL.GenericConnections then
+    for i = 1, #GLOBAL.GenericConnections do
+        GLOBAL.GenericConnections[i]:Disconnect()
+    end
+end
+GLOBAL.GenericConnections = {}
 
 local require = GLOBAL.require
 local CommandsAPIService = GLOBAL.CommandsAPIService
 local MakeChatSystemMessage = GLOBAL.MakeChatSystemMessage
+
+local canPlayerTeleportToMouse = true
+local humanoidRootPart = nil
+local humanoid = nil
+
+local function RaycastToMouse(distance: number?): {Position: Vector3, Normal: Vector3}
+    local loc = UserInputService:GetMouseLocation()
+    local ray = workspace.CurrentCamera:ViewportPointToRay(loc.X, loc.Y)
+    local dir = ray.Direction * (distance or DEFAULT_RAY_DISTANCE)
+    local result = workspace:Raycast(ray.Origin, dir)
+    return if result then result else {Instance = nil, Position = ray.Origin + dir, Normal = Vector3.yAxis, Material = Enum.Material.Air, Distance = 0}
+end
+
+local function OnCharacterAdded(character: Model)
+    humanoid = character:WaitForChild("Humanoid") :: Humanoid
+    humanoidRootPart = character:WaitForChild("HumanoidRootPart") :: Part
+end
+
+GLOBAL.RaycastToMouse = RaycastToMouse
+GLOBAL.GetHumanoidRootPart = function()
+    return humanoidRootPart
+end
 
 CommandsAPIService.PostCommand {
     Name = "help",
@@ -66,3 +97,49 @@ CommandsAPIService.PostCommand {
         end
     end
 }
+
+CommandsAPIService.PostCommand {
+    Name = "tpenabled",
+    Description = "A toggable where you can teleport to your mouse position whenever you pressed the teleport keybind (Default: T)",
+    Callback = function(out: boolean)
+        canPlayerTeleportToMouse = out
+    end,
+    Arguments = {out = "boolean"}
+}
+
+CommandsAPIService.PostCommand {
+    Name = "setgenerickeybindof",
+    Description = "Set a keybind of a Generic Keybind to something else",
+    Callback = function(of: string, keybind: string)
+        if GLOBAL.GenericKeybinds[of] == nil then
+            local genericKeybindList = {}
+            for key in pairs(GLOBAL.GenericKeybinds) do
+                table.insert(genericKeybindList, tostring(key))
+            end
+            error(("%s is not a bound keybind, bounded keys are:\n%q"):format(of, table.concat(genericKeybindList, '\n')))
+        end
+        local key = Enum.KeyCode[keybind]
+        if not key then
+            error(("%s is not a valid keycode"):format(key))
+        end
+        GLOBAL.GenericKeybinds[of] = key
+    end
+}
+
+table.insert(GLOBAL.GenericConnections, Players.LocalPlayer.CharacterAdded:Connect(OnCharacterAdded))
+table.insert(GLOBAL.GenericConnections, UserInputService.InputBegan:Connect(function(input: InputObject, gpe: boolean)
+    if gpe then return end
+    if input.KeyCode == GLOBAL.GenericKeybinds.Teleport then
+        if canPlayerTeleportToMouse then
+            if humanoidRootPart then
+                local result = RaycastToMouse()
+                local position = result.Position+result.Normal*2
+                humanoidRootPart.CFrame = CFrame.new(position) * CFrame.lookAt(Vector3.zero, humanoidRootPart.CFrame.LookVector)
+            end
+        end
+    end
+end))
+
+if Players.LocalPlayer.Character then
+    OnCharacterAdded(Players.LocalPlayer.Character)
+end
