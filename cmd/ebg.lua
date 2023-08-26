@@ -41,10 +41,10 @@ GLOBAL.SpoofedSpells = {} do
         return result
     end)
     Spoof.new("Water Beam", false, function(old)
-        return {Origin = ResultCollage.CFArg(Vector3.new(0, -2.5, 0)).Position}
+        return {Origin = ResultCollage.CFArg(Vector3.new(0, -2, 0)).Position}
     end)
     Spoof.new("Auroral Blast", false, function(old)
-        return {Origin = ResultCollage.CFArg(Vector3.new(0, -2.5, 0)).Position}
+        return {Origin = ResultCollage.CFArg(Vector3.new(0, -2, 0)).Position}
     end)
     Spoof.new("Blaze Column", false, function(old)
         local result = ResultCollage.CFArg(Vector3.new(0, -1.5, 0))
