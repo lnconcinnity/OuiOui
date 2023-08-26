@@ -35,6 +35,7 @@ CommandsAPIService.PostCommand {
     Name = "package",
     Description = "Import a command package to the game",
     Callback = function(name: string)
+        assert(name and #name > 0, "Name must not be nil or an empty string")
         if table.find(IGNORE_PACKAGES, name) or IMPORTED_PACKAGES[name] then
             error(("Package %s is already loaded"):format(name))
         end
