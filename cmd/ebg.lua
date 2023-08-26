@@ -1,9 +1,13 @@
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
 
 local GLOBAL = getgenv()
 
 local require = GLOBAL.require
 local CommandsAPIService = GLOBAL.CommandsAPIService
 local MakeChatSystemMessage = GLOBAL.MakeChatSystemMessage
+local GetNearestPlayer = GLOBAL.GetNearestPlayer
+local GetNearestPlayersFromRadius = GLOBAL.GetNearestPlayersFromRadius
 local RaycastToMouse = GLOBAL.RaycastToMouse
 
 GLOBAL.SpoofedSpells = {} do
@@ -56,22 +60,38 @@ GLOBAL.SpoofedSpells = {} do
     end)
 end
 
-local REDUCED_MANA_CLASSES = {}
-REDUCED_MANA_CLASSES['proj'] = false
-REDUCED_MANA_CLASSES['multi'] = false
-REDUCED_MANA_CLASSES['aoe'] = false
+local CombatRemote = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Combat")
 
-local spoofHook; spoofHook = hookmetamethod(game, '__namecall', function(self, ...)
-    if getnamecallmethod() == "InvokeServer" and self.Name == "DoMagic" then
-        local args = {...}
-        local spellName = args[2]
-        local spoof = GLOBAL.SpoofedSpells[spellName]
-        if spoof and spoof.Enabled == true then
-            args[3] = spoof.Callback(args[3])
+local autoPunchActive = false
+local infStaminaActive = false
+
+local lastPunchIteration = 0
+
+local namecallHook; namecallHook = hookmetamethod(game, '__namecall', function(self, ...)
+    if getnamecallmethod() == "InvokeServer" then
+        if self.Name == "DoMagic" then
+            local args = {...}
+            local spellName = args[2]
+            local spoof = GLOBAL.SpoofedSpells[spellName]
+            if spoof and spoof.Enabled == true then
+                args[3] = spoof.Callback(args[3])
+            end
+            return namecallHook(self, table.unpack(args))
         end
-        return spoofHook(self, table.unpack(args))
+    elseif getnamecallmethod() == "FireServer" then
+        if self.Name == "PlayerData" then
+            if infStaminaActive then
+                local args = {...}
+                if args[1] == "Flip" then
+                    args[1] = ""
+                elseif args[1] == "Running" then
+                    args[2] = false
+                end
+                return namecallHook(self, table.unpack(args))
+            end
+        end
     end
-    return spoofHook(self, ...)
+    return namecallHook(self, ...)
 end)
 
 CommandsAPIService.PostCommand {
@@ -138,3 +158,38 @@ CommandsAPIService.PostCommand {
         return ("Current spoofable spells: \n%s"):format(table.concat(spoofable, '\n'))
     end,
 }
+
+CommandsAPIService.PostCommand {
+    Name = "toggleinfstamina",
+    Description = "Toggle infite stamina, running and flipping won't consume any stamina",
+    Callback = function(out: boolean)
+        infStaminaActive = out
+    end,
+    Arguments = {out = "boolean"}
+}
+
+
+CommandsAPIService.PostCommand {
+    Name = "toggleautopunch",
+    Description = "Toggle autopunch, will punch players inside a 12-stud radius",
+    Callback = function(out: boolean)
+        autoPunchActive = out
+    end,
+    Arguments = {out = "boolean"}
+}
+
+table.insert(GLOBAL.GenericCleanup, RunService.Heartbeat:Connect(function(dt)
+    if autoPunchActive then
+        local now = tick()
+        if now >= lastPunchIteration then
+            lastPunchIteration = now + 0.178
+            local nearestPlayers = GetNearestPlayersFromRadius()
+            if nearestPlayers and #nearestPlayers > 0 then
+                for _, player in ipairs(nearestPlayers) do
+                    CombatRemote:FireServer(1)
+                    CombatRemote:FireServer(player.Character)
+                end
+            end
+        end
+    end
+end))

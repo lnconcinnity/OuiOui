@@ -58,6 +58,38 @@ local canPlayerFly = true
 local humanoidRootPart = nil
 local humanoid = nil
 
+local function GetNearestPlayer()
+    if not humanoidRootPart then
+        return nil
+    end
+
+    local nearestPlayer, minDist = nil, math.huge
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player == Players.LocalPlayer then continue end
+        local dist = player:DistanceFromCharacter(humanoidRootPart.Position)
+        if dist < minDist then
+            nearestPlayer = player
+            minDist = dist
+        end
+    end
+    return nearestPlayer
+end
+
+local function GetNearestPlayersFromRadius(radius)
+    if not humanoidRootPart then
+        return nil
+    end
+    local nearestPlayers = {}
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player == Players.LocalPlayer then continue end
+        local dist = player:DistanceFromCharacter(humanoidRootPart.Position)
+        if dist < (radius or 50) then
+            nearestPlayers[#nearestPlayers+1] = player
+        end
+    end
+    return nearestPlayers
+end
+
 local function RaycastToMouse(distance: number?, safeCall: boolean?): {Position: Vector3, Normal: Vector3}
     local params = RaycastParams.new()
     params.RespectCanCollide = true
@@ -69,7 +101,7 @@ local function RaycastToMouse(distance: number?, safeCall: boolean?): {Position:
     return if result then result else {Instance = nil, Position = ray.Origin + dir, Normal = Vector3.yAxis, Material = Enum.Material.Air, Distance = 0}
 end
 
-local function toggleFlyState(toggled: boolean)
+local function ToggleFlyState(toggled: boolean)
     if canPlayerFly then
         if toggled then
             flyMovers.position.Position = humanoidRootPart.Position
@@ -133,6 +165,8 @@ local function OnCharacterAdded(character: Model)
     end
 end
 
+GLOBAL.GetNearestPlayer = GetNearestPlayer
+GLOBAL.GetNearestPlayersFromRadius = GetNearestPlayersFromRadius
 GLOBAL.RaycastToMouse = RaycastToMouse
 GLOBAL.GetHumanoidRootPart = function()
     return humanoidRootPart
@@ -242,7 +276,7 @@ CommandsAPIService.PostCommand {
     Name = "fly",
     Description = "Set flight mode enabled",
     Callback = function()
-        toggleFlyState(true)
+        ToggleFlyState(true)
         return "Enabled flight"
     end
 }
@@ -251,7 +285,7 @@ CommandsAPIService.PostCommand {
     Name = "unfly",
     Description = "Set flight mode disabled",
     Callback = function()
-        toggleFlyState(false)
+        ToggleFlyState(false)
         return "Disabled flight"
     end
 }
@@ -323,7 +357,7 @@ table.insert(GLOBAL.GenericCleanup, UserInputService.InputBegan:Connect(function
             end
         end
     elseif input.KeyCode == GLOBAL.GenericKeybinds.Fly then
-        toggleFlyState(not flightStateEnabled)
+        ToggleFlyState(not flightStateEnabled)
     elseif flyInputs[input.KeyCode] ~= nil then
         flyInputs[input.KeyCode] = true
     end
