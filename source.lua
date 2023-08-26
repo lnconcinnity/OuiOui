@@ -19,7 +19,7 @@ local require do
     local oldRequire = require
     local SEPERATOR = "/"
     local EXTENSION = ".lua"
-    local ORIGIN = string.format("https://raw.githubusercontent.com/%s/OuiOui/%s/cmds",
+    local ORIGIN = string.format("https://raw.githubusercontent.com/%s/OuiOui/%s/cmd",
         "weeeeee8", -- user
         "main" -- branch
     )
@@ -36,6 +36,9 @@ local require do
                 local _path = string.split(path, SEPERATOR)
                 local name = _path[#_path]:sub(1, #_path[#_path]-#EXTENSION)
                 local src = loadstring(content, name)
+                if not src then
+                    error("Unknown fetch error", 2)
+                end
                 src = src()
                 cache[path] = src
                 return src
