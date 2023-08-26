@@ -18,11 +18,11 @@ GLOBAL.SpoofedSpells = {} do
         return self
     end
 
-    Spoof.new("Lightning Barrage", true, function(old)
+    Spoof.new("Lightning Barrage", false, function(old)
         local result = RaycastToMouse(nil, true)
         return {Direction = CFrame.new(result.Position - Vector3.new(0, 16, 0)) * CFrame.lookAt(Vector3.zero, Vector3.yAxis)}
     end)
-    Spoof.new("Orbital Strike", function(old)
+    Spoof.new("Orbital Strike", false, function(old)
         local result = RaycastToMouse(nil, true)
         return CFrame.new(result.Position) * CFrame.lookAt(Vector3.zero, Vector3.yAxis)
     end)
@@ -38,7 +38,7 @@ local spoofHook; spoofHook = hookmetamethod(game, '__namecall', function(self, .
         local args = {...}
         local spellName = args[2]
         local spoof = GLOBAL.SpoofedSpells[spellName]
-        if spoof and spoof.Enabled then
+        if spoof and spoof.Enabled == true then
             args[3] = spoof.Callback(args[3])
         end
         return spoofHook(self, table.unpack(args))
@@ -78,6 +78,6 @@ CommandsAPIService.PostCommand {
         for key in pairs(GLOBAL.SpoofedSpells) do
             table.insert(spoofable, key)
         end
-        return ("Current spoofable spells: \n%q"):format(table.concat(spoofable, '\n'))
+        return ("Current spoofable spells: \n%s"):format(table.concat(spoofable, '\n'))
     end,
 }

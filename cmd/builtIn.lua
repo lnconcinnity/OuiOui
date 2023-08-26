@@ -223,9 +223,9 @@ CommandsAPIService.PostCommand {
     Callback = function()
         local genericKeybindList = {}
         for key, code in pairs(GLOBAL.GenericKeybinds) do
-            table.insert(genericKeybindList, ("%s - %q"):format(key, tostring(code)))
+            table.insert(genericKeybindList, ("%s - %s"):format(key, tostring(code.Name)))
         end
-        return ("Current bounded keybinds: \n%q"):format(table.concat(genericKeybindList, '\n'))
+        return ("Current bounded keybinds: \n%s"):format(table.concat(genericKeybindList, '\n'))
     end,
 }
 
@@ -254,7 +254,7 @@ CommandsAPIService.PostCommand {
             for key in pairs(GLOBAL.GenericKeybinds) do
                 table.insert(genericKeybindList, key)
             end
-            error(("%s is not a bound keybind, bounded keys are:\n%q"):format(of, table.concat(genericKeybindList, '\n')))
+            error(("%s is not a bound keybind, bounded keys are:\n%s"):format(of, table.concat(genericKeybindList, '\n')))
         end
         local key = Enum.KeyCode[keybind]
         if not key then
