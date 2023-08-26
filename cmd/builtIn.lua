@@ -8,7 +8,7 @@ local GLOBAL = getgenv()
 local DEFAULT_RAY_DISTANCE = 2000
 local IMPORTED_PACKAGES = {}
 local IGNORE_PACKAGES = {'builtIn'}
-GLOBAL.GenericKeybinds = {
+GLOBAL.GenericKeybinds = GLOBAL.GenericKeybinds or {
     Teleport = Enum.KeyCode.T,
     Fly = Enum.KeyCode.F,
 }
@@ -42,7 +42,15 @@ local flyMovers = {
     position = nil :: AlignPosition,
     orientation = nil :: AlignOrientation,
 }
-local flightSpeed = 16
+local flightSpeed = 50
+
+local cacheParts = {}
+local cacheConnections = {}
+table.insert(GLOBAL.GenericCleanup, function()
+    for _,v in ipairs(cacheConnections) do
+        v:Disconnect()
+    end
+end)
 
 local canPlayerTeleportToMouse = true
 local canPlayerFly = true
@@ -95,6 +103,25 @@ local function OnCharacterAdded(character: Model)
     alignOrientation.Enabled = false
     alignOrientation.Parent = humanoidRootPart
     flyMovers.orientation = alignOrientation
+
+    local function onDescendantAdded(descendant: Instance)
+        if descendant:IsA("BasePart") then
+            cacheParts[descendant] = true
+        end
+    end
+
+    for _,v in ipairs(cacheConnections) do
+        v:Disconnect()
+    end
+    cacheConnections = {}
+
+    table.insert(cacheConnections, character.DescendantAdded:Connect(onDescendantAdded))
+    table.insert(cacheConnections, character.DescendantRemoving:Connect(function(d)
+        cacheParts[d] = nil
+    end))
+    for _, v in ipairs(character:GetDescendants()) do
+        task.spawn(onDescendantAdded, v)
+    end
 end
 
 GLOBAL.RaycastToMouse = RaycastToMouse
@@ -175,7 +202,7 @@ CommandsAPIService.PostCommand {
 }
 
 CommandsAPIService.PostCommand {
-    Name = "settflightspeed",
+    Name = "setflightspeed",
     Description = "Adjust the flight speed to your liking (min: 16)",
     Callback = function(speed: boolean)
         if speed < 16 then
@@ -252,7 +279,7 @@ do
                 if flyInputs[Enum.KeyCode.S] then
                     dir += Vector3.zAxis
                 end
-                local input = workspace.CurrentCamera.CFrame:VectorToObjectSpace(dir)
+                local input = workspace.CurrentCamera.CFrame:VectorToWorldSpace(dir)
                 if input:Dot(input) > 0 then
                     input = input.Unit*flightSpeed
                 end
@@ -284,6 +311,13 @@ table.insert(GLOBAL.GenericCleanup, UserInputService.InputBegan:Connect(function
         toggleFlyState(not flightStateEnabled)
     elseif flyInputs[input.KeyCode] ~= nil then
         flyInputs[input.KeyCode] = true
+    end
+end))
+table.insert(GLOBAL.GenericCleanup, RunService.Stepped:Connect(function()
+    if flightStateEnabled then
+        for cache in pairs(cacheParts) do
+            cache.CanCollide = false
+        end
     end
 end))
 table.insert(GLOBAL.GenericCleanup, UserInputService.InputEnded:Connect(function(input: InputObject, gpe: boolean)
