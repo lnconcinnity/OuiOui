@@ -102,7 +102,6 @@ CommandsAPIService.PostCommand {
     Name = "tpenabled",
     Description = "A toggable where you can teleport to your mouse position whenever you pressed the teleport keybind (Default: T)",
     Callback = function(out: boolean)
-        print(out)
         canPlayerTeleportToMouse = out
     end,
     Arguments = {out = "boolean"}

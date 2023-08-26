@@ -110,9 +110,8 @@ local Command = {} do
         local newArgs = {}
         local oldArgs = self.Arguments
         for i = 1, #oldArgs do
-            local arg = oldArgs[i]:gsub(" ", "")--remove spaces
+            local arg = oldArgs[i]
             local boolOk, boolArg = pcall(HttpService.JSONDecode, HttpService, arg)
-            print(boolOk, boolArg)
             local out = (if boolOk then boolArg else nil) or tonumber(arg) or tostring(arg)
             if self.Command.Parser then
                 local ok, typeOrErr = self.Command.Parser:Validate(out, i)
@@ -182,13 +181,69 @@ local CommandStorageAPI = {} do
 end
 
 local Dispatcher = {} do
-    local SEPERATOR = ","
+    -- took it off cmdr
+    local function charCode(n)
+        return utf8.char(tonumber(n, 16))
+    end
+
+    local function parseEscapeSequences(text)
+        return text:gsub("\\(.)", {
+            t = "\t",
+            n = "\n",
+        })
+            :gsub("\\u(%x%x%x%x)", charCode)
+            :gsub("\\x(%x%x)", charCode)
+    end
+    
+    local function encodeControlChars(text)
+        return (
+            text:gsub("\\\\", "___!ESCAPE!___")
+                :gsub('\\"', "___!QUOTE!___")
+                :gsub("\\'", "___!SQUOTE!___")
+                :gsub("\\\n", "___!LN!___")
+        )
+    end
+    
+    local function decodeControlChars(text)
+        return (text:gsub("___!ESCAPE!___", "\\"):gsub("___!QUOTE!___", '"'):gsub("___!LN!___", "\n"))
+    end
+
+    local function splitString(text, max)
+        text = encodeControlChars(text)
+        max = max or math.huge
+        local t = {}
+        local spat, epat = [=[^(['"])]=], [=[(['"])$]=]
+        local buf, quoted
+        for str in text:gmatch("[^ ]+") do
+            str = parseEscapeSequences(str)
+            local squoted = str:match(spat)
+            local equoted = str:match(epat)
+            local escaped = str:match([=[(\*)['"]$]=])
+            if squoted and not quoted and not equoted then
+                buf, quoted = str, squoted
+            elseif buf and equoted == quoted and #escaped % 2 == 0 then
+                str, buf, quoted = buf .. " " .. str, nil, nil
+            elseif buf then
+                buf = buf .. " " .. str
+            end
+            if not buf then
+                t[#t + (#t > max and 0 or 1)] = decodeControlChars(str:gsub(spat, ""):gsub(epat, ""))
+            end
+        end
+
+        if buf then
+            t[#t + (#t > max and 0 or 1)] = decodeControlChars(buf)
+        end
+
+        return t
+    end
+
     function Dispatcher:Evaluate(text: string)
         if #text >= 100_000 then
             return false, "Input is too long"
         end
 
-        local arguments = string.split(text, SEPERATOR)
+        local arguments = splitString(text)
         local commandName = table.remove(arguments, 1)
         local commandObject = CommandStorageAPI.GetCommand(commandName)
         if commandObject then
@@ -208,7 +263,7 @@ local Dispatcher = {} do
         local args = table.pack(...)
         local text = args[1]
         for i = 2, args.n do
-            text = text .. SEPERATOR .. tostring(args[i])
+            text = text .. " " .. tostring(args[i])
         end
         local command, errText = self:Evaluate(text)
         if not command then
