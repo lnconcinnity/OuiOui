@@ -26,7 +26,7 @@ CommandsAPIService.PostCommand {
     Description = "Rejoin to the same game place",
     Callback = function()
         MakeChatSystemMessage.Out("Rejoining server place, please wait.", MakeChatSystemMessage.Colors[2])
-        TeleportService:Teleport(game.PlaceId, Players.LocalPlayer)
+        TeleportService:Teleport(game.GameId, Players.LocalPlayer)
         queue_on_teleport("loadstring(game:HttpGet('https://raw.githubusercontent.com/weeeeee8/OuiOui/main/source.lua'))()")
     end,
 }
