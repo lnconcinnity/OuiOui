@@ -152,7 +152,7 @@ CommandsAPIService.PostCommand {
 }
 
 CommandsAPIService.PostCommand {
-    Name = "package",
+    Name = "importPackage",
     Description = "Import a command package to the game",
     Callback = function(name: string)
         assert(name and #name > 0, "Name must not be nil or an empty string")
