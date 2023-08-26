@@ -301,3 +301,4 @@ Player.Chatted:Connect(onPlayerChatted)
 
 -- import built in commands
 require('/builtIn')
+sendOutMessageToChat("OuiOui imported!", OUT_INFO_COLOR, 24)
