@@ -18,21 +18,37 @@ GLOBAL.SpoofedSpells = {} do
         return self
     end
 
-    Spoof.new("Lightning Barrage", false, function(old)
+    local ResultCollage = {}
+    ResultCollage.CFArg = function(offset)
         local result = RaycastToMouse(nil, true)
-        return {Direction = CFrame.new(result.Position - Vector3.new(0, 18, 0)) * CFrame.lookAt(Vector3.zero, Vector3.yAxis)}
+        return CFrame.new(result.Position + if offset then offset else Vector3.new(0, 0.25, 0))
+    end
+
+    Spoof.new("Lightning Barrage", false, function(old)
+        local result = ResultCollage.CFArg(Vector3.new(0, 20, 0))
+        return {Direction = result * CFrame.lookAt(Vector3.zero, Vector3.yAxis)}
     end)
     Spoof.new("Orbital Strike", false, function(old)
-        local result = RaycastToMouse(nil, true)
-        return CFrame.new(result.Position - Vector3.new(0, 15, 0)) * CFrame.lookAt(Vector3.zero, Vector3.yAxis)
+        local result = ResultCollage.CFArg()
+        return result * CFrame.lookAt(Vector3.zero, Vector3.yAxis)
     end)
     Spoof.new("Splitting Slime", false, function(old)
-        local result = RaycastToMouse(nil, true)
-        return CFrame.new(result.Position + Vector3.new(0, 0.25, 0))
+        local result = ResultCollage.CFArg()
+        return result
     end)
     Spoof.new("Illusive Atake", false, function(old)
-        local result = RaycastToMouse(nil, true)
-        return CFrame.new(result.Position + Vector3.new(0, 0.25, 0))
+        local result = ResultCollage.CFArg()
+        return result
+    end)
+    Spoof.new("Water Beam", false, function(old)
+        return {Origin = ResultCollage.CFArg(Vector3.new(0, 1.5, 0)).Position}
+    end)
+    Spoof.new("Auroral Blast", false, function(old)
+        return {Origin = ResultCollage.CFArg(Vector3.new(0, 1.5, 0)).Position}
+    end)
+    Spoof.new("Blaze Column", false, function(old)
+        local result = ResultCollage.CFArg(Vector3.new(0, 0.5, 0))
+        return result * CFrame.Angles(math.pi / 2, -math.pi / 2, math.rad(25))
     end)
 end
 
