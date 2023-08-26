@@ -111,7 +111,8 @@ local Command = {} do
         local oldArgs = self.Arguments
         for i = 1, #oldArgs do
             local arg = oldArgs[i]
-            local out = select(2, pcall(HttpService.JSONDecode, HttpService, arg)) or tonumber(arg) or tostring(arg)
+            local boolOk, boolArg = pcall(HttpService.JSONDecode, HttpService, arg)
+            local out = (if boolOk then boolArg else nil) or tonumber(arg) or tostring(arg)
             if self.Command.Parser then
                 local ok, typeOrErr = self.Command.Parser:Validate(out, i)
                 if ok then
