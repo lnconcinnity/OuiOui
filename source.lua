@@ -34,7 +34,7 @@ local require do
                 error(string.format("Unable to fetch request to (%s)", path..EXTENSION), 2)
             else
                 local _path = string.split(path, SEPERATOR)
-                local name = _path[#_path]:sub(1, #_path[#_path]-EXTENSION)
+                local name = _path[#_path]:sub(1, #_path[#_path]-#EXTENSION)
                 local src = loadstring(content, name)
                 src = src()
                 cache[path] = src
