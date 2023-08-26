@@ -5,6 +5,9 @@ local GLOBAL = getgenv()
 
 local IMPORTED_PACKAGES = {}
 local IGNORE_PACKAGES = {'builtIn'}
+local KEYBINDS = {
+    Teleport = Enum.KeyCode.T,
+}
 
 local require = GLOBAL.require
 local CommandsAPIService = GLOBAL.CommandsAPIService
@@ -26,8 +29,7 @@ CommandsAPIService.PostCommand {
     Description = "Rejoin to the same game place",
     Callback = function()
         MakeChatSystemMessage.Out("Rejoining server place, please wait.", MakeChatSystemMessage.Colors[2])
-        TeleportService:Teleport(game.GameId, Players.LocalPlayer)
-        queue_on_teleport("loadstring(game:HttpGet('https://raw.githubusercontent.com/weeeeee8/OuiOui/main/source.lua'))()")
+        TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, Players.LocalPlayer)
     end,
 }
 
@@ -39,7 +41,10 @@ CommandsAPIService.PostCommand {
         if table.find(IGNORE_PACKAGES, name) or IMPORTED_PACKAGES[name] then
             error(("Package %s is already loaded"):format(name))
         end
-        require('/'..name)
+        local ok = pcall(require, '/'..name)
+        if not ok then
+            error(("Unable to load package %s (package doesn't exist)"):format(name))
+        end
     end,
     Arguments = {name = "string"}
 }
