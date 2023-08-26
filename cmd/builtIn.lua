@@ -117,6 +117,10 @@ local function OnCharacterAdded(character: Model)
     end
     cacheConnections = {}
 
+    humanoid.Died:Connect(function()
+        toggleFlyState(false)
+    end)
+
     table.insert(cacheConnections, character.DescendantAdded:Connect(onDescendantAdded))
     table.insert(cacheConnections, character.DescendantRemoving:Connect(function(d)
         cacheParts[d] = nil
