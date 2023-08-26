@@ -52,7 +52,7 @@ GLOBAL.SpoofedSpells = {} do
     end)
     Spoof.new("Arcane Gaurdian", false, function(old)
         local result = ResultCollage.CFArg(Vector3.new(0, 26, 0))
-        return result
+        return {Position = result.Position}
     end)
 end
 
