@@ -47,7 +47,7 @@ GLOBAL.SpoofedSpells = {} do
         return {Origin = ResultCollage.CFArg(Vector3.new(0, 1.5, 0)).Position}
     end)
     Spoof.new("Blaze Column", false, function(old)
-        local result = ResultCollage.CFArg(Vector3.new(0, 0.5, 0))
+        local result = ResultCollage.CFArg(Vector3.new(0, -1.5, 0))
         return result * CFrame.Angles(math.pi / 2, -math.pi / 2, math.rad(25))
     end)
 end
