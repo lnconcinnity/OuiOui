@@ -163,6 +163,7 @@ CommandsAPIService.PostCommand {
         if not ok then
             error(("Unable to load package %s (package doesn't exist)"):format(name))
         end
+        return "Package " .. name .. " imported!"
     end,
     Arguments = {name = "string"}
 }
