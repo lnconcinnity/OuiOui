@@ -144,7 +144,7 @@ CommandsAPIService.PostCommand {
     Callback = function()
         local commands = CommandsAPIService.GetCommands()
         for commandName, command in pairs(commands) do
-            MakeChatSystemMessage.Out(("%s - %s"):format(commandName, command.Description or "No description field"), MakeChatSystemMessage.Colors[3])
+            MakeChatSystemMessage.Out(("%s - %s"):format(commandName, command.Description or "Empty field, please view source code"), MakeChatSystemMessage.Colors[3])
         end
     end
 }
@@ -198,6 +198,7 @@ CommandsAPIService.PostCommand {
     Description = "A toggable where you can enable your character to enter flight mode whenever you pressed the fly keybind",
     Callback = function(out: boolean)
         canPlayerFly = out
+        return (if out then "Enabled" else "Disabled") .. " flight mode"
     end,
     Arguments = {out = "boolean"}
 }
@@ -207,6 +208,7 @@ CommandsAPIService.PostCommand {
     Description = "A toggable where you can enable your character teleport to your mouse position whenever you pressed the teleport keybind",
     Callback = function(out: boolean)
         canPlayerTeleportToMouse = out
+        return (if out then "Enabled" else "Disabled") .. " teleportation"
     end,
     Arguments = {out = "boolean"}
 }
@@ -241,6 +243,7 @@ CommandsAPIService.PostCommand {
     Description = "Set flight mode enabled",
     Callback = function()
         toggleFlyState(true)
+        return "Enabled flight"
     end
 }
 
@@ -249,6 +252,7 @@ CommandsAPIService.PostCommand {
     Description = "Set flight mode disabled",
     Callback = function()
         toggleFlyState(false)
+        return "Disabled flight"
     end
 }
 

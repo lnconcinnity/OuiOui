@@ -84,6 +84,7 @@ CommandsAPIService.PostCommand {
                 spoof.Enabled = if default ~= nil then default else true
             end
         end
+        return "Successfully " .. (if (if default then default else true) then "spoofed " else "unspoofed ") .. "spells: " .. table.concat({...}, "\n")
     end,
     Arguments = {spellName = "string", toggle = {"boolean", "opt"}}
 }
@@ -95,6 +96,7 @@ CommandsAPIService.PostCommand {
         for _, spoof in pairs(GLOBAL.SpoofedSpells) do
             spoof.Enabled = if default ~= nil then default else true
         end
+        return "Successfully " .. (if (if default then default else true) then "spoofed " else "unspoofed ") .. "every spell"
     end,
     Arguments = {spellName = "string", toggle = {"boolean", "opt"}}
 }
@@ -107,6 +109,7 @@ CommandsAPIService.PostCommand {
         if spoof then
             spoof.Enabled = if default ~= nil then default else true
         end
+        return "Successfully " .. (if (if default then default else true) then "spoofed " else "unspoofed ") .. spellName
     end,
     Arguments = {spellName = "string", toggle = {"boolean", "opt"}}
 }
@@ -119,6 +122,7 @@ CommandsAPIService.PostCommand {
         if spoof then
             spoof.Enabled = false
         end
+        return "Successfully unspoofed " .. spellName
     end,
     Arguments = {spellName = "string"}
 }
