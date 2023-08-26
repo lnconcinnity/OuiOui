@@ -6,8 +6,7 @@ type CommandInfo = {
     Name: string,
     Description: string?,
     Callback: (...any) -> (),
-    Priority: number,
-    Arguments: {[string]: string | {string}}
+    Arguments: {[string]: string | {string}}?
 }
 
 local OUT_ERROR_COLOR = Color3.fromRGB(255, 22, 0)
@@ -62,6 +61,11 @@ local function sendOutMessageToChat(text: string, color: Color3?, textSize: numb
     }
     StarterGui:SetCore('ChatMakeSystemMessage', config)
 end
+getgenv().MakeChatSystemMessage = {
+    Out = sendOutMessageToChat,
+    Colors = {OUT_ERROR_COLOR, OUT_WARN_COLOR, OUT_INFO_COLOR}
+}
+
 
 local ArgumentParser = {} do
     local OPTIONAL = "opt"
@@ -106,20 +110,21 @@ local Command = {} do
         for i = 1, #oldArgs do
             local arg = oldArgs[i]
             local out = select(2, pcall(HttpService.JSONDecode, HttpService, arg)) or tonumber(arg) or tostring(arg)
-            local ok, typeOrErr = self.Command.Parser:Validate(out, i)
-            if ok then
-                if typeOrErr == "Player" then
-                    local player = Players:FindFirstChild(arg)
-                    if not player then
-                        return false, "Could not find the player " .. arg
+            if self.Command.Parser then
+                local ok, typeOrErr = self.Command.Parser:Validate(out, i)
+                if ok then
+                    if typeOrErr == "Player" then
+                        local player = Players:FindFirstChild(arg)
+                        if not player then
+                            return false, "Could not find the player " .. arg
+                        end
+                        out = player
                     end
-                    arg = player
+                else
+                    return false, typeOrErr
                 end
-
-                newArgs[i] = arg
-            else
-                return false, typeOrErr
             end
+            newArgs[i] = out
         end
         self.Arguments = newArgs
         return true
@@ -134,13 +139,13 @@ local Command = {} do
         end
     end
 
-    function Command.new(name: string, desc: string?, callback: (...any) -> (), autotCompletePriority: number, args: {[string]: string | {string}})
+    function Command.new(name: string, desc: string?, callback: (...any) -> (), autotCompletePriority: number, args: {[string]: string | {string}}?)
         local self = {
             Name = name,
             Description = desc,
             Callback = callback,
             Priority = autotCompletePriority,
-            Parser = ArgumentParser.new(args),
+            Parser = if args then ArgumentParser.new(args) else nil,
         }
 
         return setmetatable(self, {__index = Command})
@@ -165,6 +170,9 @@ local CommandStorageAPI = {} do
     end
     function CommandStorageAPI.GetCommand(name: string)
         return COMMANDS[name]
+    end
+    function CommandStorageAPI.GetCommands()
+        return COMMANDS
     end
     getgenv().CommandsAPIService = CommandStorageAPI
 end
@@ -225,8 +233,10 @@ local function onPlayerChatted(message: string)
     elseif hasPrefix(message) then
         message = message:sub(2, #message)
         local contents = string.split(message, " ")
-        print(contents)
         Dispatcher:Run(table.unpack(contents))
     end
 end
 Player.Chatted:Connect(onPlayerChatted)
+
+-- import built in commands
+require('/builtIn')
