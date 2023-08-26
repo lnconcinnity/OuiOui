@@ -25,7 +25,7 @@ GLOBAL.SpoofedSpells = {} do
     end
 
     Spoof.new("Lightning Barrage", false, function(old)
-        local result = ResultCollage.CFArg(Vector3.new(0, 25, 0))
+        local result = ResultCollage.CFArg(Vector3.new(0, 28, 0))
         return {Direction = result * CFrame.lookAt(Vector3.zero, Vector3.yAxis)}
     end)
     Spoof.new("Orbital Strike", false, function(old)
@@ -50,7 +50,7 @@ GLOBAL.SpoofedSpells = {} do
         local result = ResultCollage.CFArg(Vector3.new(0, -1.5, 0))
         return result * CFrame.Angles(math.pi / 2, -math.pi / 2, math.rad(25))
     end)
-    Spoof.new("Arcane Gaurdian", false, function(old)
+    Spoof.new("Arcane Guardian", false, function(old)
         local result = ResultCollage.CFArg(Vector3.new(0, 26, 0))
         return {Position = result.Position}
     end)

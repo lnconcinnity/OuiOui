@@ -42,7 +42,7 @@ local flyMovers = {
     position = nil :: AlignPosition,
     orientation = nil :: AlignOrientation,
 }
-local flightSpeed = 50
+local flightSpeed = 120
 
 local cacheParts = {}
 local cacheConnections = {}
