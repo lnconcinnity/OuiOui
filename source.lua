@@ -14,7 +14,6 @@ local OUT_WARN_COLOR = Color3.fromRGB(255, 199, 50)
 local OUT_INFO_COLOR = Color3.fromRGB(198, 255, 244)
 
 local CommandPrefix = ";"
-local HideCommandFromOthers = true
 
 local require do
     local oldRequire = require
