@@ -97,11 +97,11 @@ local ArgumentParser = {} do
     end
 
     function ArgumentParser:Validate(out: any, index: number)
-        local type = type(out)
+        local t = type(out)
         if type(self.types[index]) == "table" then
             local ok = false
             for i = 1, #self.types[index] do
-                local ok_ = validateType(type, self.types[index][i])
+                local ok_ = validateType(t, self.types[index][i])
                 if ok_ then
                     ok = true
                     break
@@ -109,7 +109,7 @@ local ArgumentParser = {} do
             end
             return ok
         else
-            return validateType(type, self.types[index])
+            return validateType(t, self.types[index])
         end
     end
 end
