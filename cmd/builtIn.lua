@@ -58,11 +58,11 @@ local canPlayerFly = true
 local humanoidRootPart = nil
 local humanoid = nil
 
-local function RaycastToMouse(distance: number?): {Position: Vector3, Normal: Vector3}
-    local loc = UserInputService:GetMouseLocation()
-    local ray = workspace.CurrentCamera:ViewportPointToRay(loc.X, loc.Y)
+local function RaycastToMouse(distance: number?, safeCall: boolean?): {Position: Vector3, Normal: Vector3}
+    local loc = if safeCall then UserInputService.GetMouseLocation(UserInputService) else UserInputService:GetMouseLocation()
+    local ray = if safeCall then workspace.CurrentCamera.ViewportPointToRay(workspace.CurrentCamera, loc.X, loc.Y) else workspace.CurrentCamera:ViewportPointToRay(loc.X, loc.Y)
     local dir = ray.Direction * (distance or DEFAULT_RAY_DISTANCE)
-    local result = workspace:Raycast(ray.Origin, dir)
+    local result = if safeCall then workspace.Raycast(workspace, ray.Origin, dir) else workspace:Raycast(ray.Origin, dir)
     return if result then result else {Instance = nil, Position = ray.Origin + dir, Normal = Vector3.yAxis, Material = Enum.Material.Air, Distance = 0}
 end
 

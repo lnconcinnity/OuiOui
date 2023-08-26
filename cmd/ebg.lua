@@ -19,11 +19,11 @@ GLOBAL.SpoofedSpells = {} do
     end
 
     Spoof.new("Lightning Barrage", true, function(old)
-        local result = RaycastToMouse()
+        local result = RaycastToMouse(nil, true)
         return {Direction = CFrame.new(result.Position - Vector3.new(0, 16, 0)) * CFrame.lookAt(Vector3.zero, Vector3.yAxis)}
     end)
     Spoof.new("Orbital Strike", function(old)
-        local result = RaycastToMouse()
+        local result = RaycastToMouse(nil, true)
         return CFrame.new(result.Position) * CFrame.lookAt(Vector3.zero, Vector3.yAxis)
     end)
 end
