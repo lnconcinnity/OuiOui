@@ -102,6 +102,7 @@ CommandsAPIService.PostCommand {
     Name = "tpenabled",
     Description = "A toggable where you can teleport to your mouse position whenever you pressed the teleport keybind (Default: T)",
     Callback = function(out: boolean)
+        print(out)
         canPlayerTeleportToMouse = out
     end,
     Arguments = {out = "boolean"}
@@ -122,7 +123,9 @@ CommandsAPIService.PostCommand {
         if not key then
             error(("%s is not a valid keycode"):format(key))
         end
+        local old = GLOBAL.GenericKeybinds[of]
         GLOBAL.GenericKeybinds[of] = key
+        return "Successfully swapped out " .. of .. "'s keybind from " .. old .. " to " .. keybind
     end
 }
 

@@ -110,8 +110,9 @@ local Command = {} do
         local newArgs = {}
         local oldArgs = self.Arguments
         for i = 1, #oldArgs do
-            local arg = oldArgs[i]
+            local arg = oldArgs[i]:gsub(" ", "")--remove spaces
             local boolOk, boolArg = pcall(HttpService.JSONDecode, HttpService, arg)
+            print(boolOk, boolArg)
             local out = (if boolOk then boolArg else nil) or tonumber(arg) or tostring(arg)
             if self.Command.Parser then
                 local ok, typeOrErr = self.Command.Parser:Validate(out, i)
