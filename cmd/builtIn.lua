@@ -209,9 +209,10 @@ CommandsAPIService.PostCommand {
     Description = "Adjust the flight speed to your liking (min: 16)",
     Callback = function(speed: boolean)
         if speed < 16 then
-            MakeChatSystemMessage.Out("Cannot have flight speed below 16", MakeChatSystemMessage.Colors[2])
+            MakeChatSystemMessage.Out("Cannot have flight speed below 16, clamping at 16...", MakeChatSystemMessage.Colors[2])
         end
         flightSpeed = math.max(speed, 16)
+        return "Successfully set flight speed to " .. flightSpeed
     end,
     Arguments = {speed = "number"}
 }
