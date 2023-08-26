@@ -76,6 +76,8 @@ local function toggleFlyState(toggled: boolean)
         else
             flyMovers.position.Enabled = false
             flyMovers.orientation.Enabled = false
+            humanoidRootPart.AssemblyLinearVelocity *= 0
+            humanoidRootPart.AssemblyAngularVelocity *= 0
         end
         flightStateEnabled = toggled
     end
@@ -321,10 +323,10 @@ table.insert(GLOBAL.GenericCleanup, RunService.Stepped:Connect(function()
     end
 end))
 table.insert(GLOBAL.GenericCleanup, UserInputService.InputEnded:Connect(function(input: InputObject, gpe: boolean)
-    if gpe then return end
     if flyInputs[input.KeyCode] ~= nil then
         flyInputs[input.KeyCode] = false
     end
+    if gpe then return end
 end))
 
 if Players.LocalPlayer.Character then
