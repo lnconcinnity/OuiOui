@@ -92,7 +92,7 @@ CommandsAPIService.PostCommand {
     Name = "spoofall",
     Description = "Spoof a all spells to cause mayhem!",
     Callback = function(default: boolean?)
-        for _, spoof in ipairs(GLOBAL.SpoofedSpells) do
+        for _, spoof in pairs(GLOBAL.SpoofedSpells) do
             spoof.Enabled = if default ~= nil then default else true
         end
     end,
