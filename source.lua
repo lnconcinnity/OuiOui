@@ -158,6 +158,7 @@ end
 local CommandStorageAPI = {} do
     local COMMANDS = {}
     function CommandStorageAPI.PostCommand(commandInfo: CommandInfo)
+        print(unpack(commandInfo))
         COMMANDS[commandInfo.Name] = Command.new(commandInfo.Name, commandInfo.Description, commandInfo.Callback, commandInfo.Priority, commandInfo.ArgumentTypes)
     end
 
