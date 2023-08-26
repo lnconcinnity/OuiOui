@@ -73,6 +73,21 @@ local ArgumentParser = {} do
     local OPTIONAL = "opt"
     local PLAYER_TYPE = "plr"
 
+    local function validateType(type, stype)
+        
+        if stype == OPTIONAL then
+            return true
+        elseif (type == "number" or type == "boolean") then
+            return type == stype, ("Invalid type, expected %s, got %s"):format(stype, type)
+        elseif type == "string" then
+            if stype == PLAYER_TYPE then
+                return true, "Player"
+            end
+            return true
+        end
+        return false
+    end
+
     function ArgumentParser.new(args: {[string]: string | {string}})
         local types = {}
         for _, k in next, args do
@@ -83,15 +98,18 @@ local ArgumentParser = {} do
 
     function ArgumentParser:Validate(out: any, index: number)
         local type = type(out)
-        if self.types[index] == OPTIONAL then
-            return true
-        elseif (type == "number" or type == "boolean") then
-            return type == self.types[index], ("Invalid type, expected %s, got %s"):format(self.types[index], type)
-        elseif type == "string" then
-            if self.types[index] == PLAYER_TYPE then
-                return true, "Player"
+        if type(self.types[index]) == "table" then
+            local ok = false
+            for i = 1, #self.types[index] do
+                local ok_ = validateType(type, self.types[index][i])
+                if ok_ then
+                    ok = true
+                    break
+                end
             end
-            return true
+            return ok
+        else
+            return validateType(type, self.types[index])
         end
     end
 end
