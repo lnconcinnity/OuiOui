@@ -37,7 +37,7 @@ local require do
                 local name = _path[#_path]:sub(1, #_path[#_path]-#EXTENSION)
                 local src = loadstring(content, name)
                 if not src then
-                    error("Unknown fetch error", 2)
+                    error("Cannot find the source code for " .. name, 2)
                 end
                 src = src()
                 cache[path] = src
@@ -135,7 +135,7 @@ local Command = {} do
     function ParsedCommand:Run()
         local ok, errOrOut = pcall(self.Callback, table.unpack(self.Arguments))
         if ok then
-            return true, errOrOut or "Command successfully ran."
+            return true, errOrOut
         else
             return false, errOrOut
         end
@@ -161,8 +161,7 @@ end
 local CommandStorageAPI = {} do
     local COMMANDS = {}
     function CommandStorageAPI.PostCommand(commandInfo: CommandInfo)
-        print(unpack(commandInfo))
-        COMMANDS[commandInfo.Name] = Command.new(commandInfo.Name, commandInfo.Description, commandInfo.Callback, commandInfo.Priority, commandInfo.ArgumentTypes)
+        COMMANDS[commandInfo.Name] = Command.new(commandInfo.Name, commandInfo.Description, commandInfo.Callback, commandInfo.Priority, commandInfo.Arguments)
     end
 
     function CommandStorageAPI.RemoveCommand(name: string)
@@ -216,7 +215,9 @@ local Dispatcher = {} do
         end
 
         local ok, out = command:Run()
-        sendOutMessageToChat(out, if ok then OUT_WARN_COLOR else OUT_ERROR_COLOR)
+        if out then
+            sendOutMessageToChat(out, if ok then OUT_WARN_COLOR else OUT_ERROR_COLOR)
+        end
     end
 end
 
