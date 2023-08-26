@@ -50,6 +50,10 @@ GLOBAL.SpoofedSpells = {} do
         local result = ResultCollage.CFArg(Vector3.new(0, -1.5, 0))
         return result * CFrame.Angles(math.pi / 2, -math.pi / 2, math.rad(25))
     end)
+    Spoof.new("Arcane Gaurdian", false, function(old)
+        local result = ResultCollage.CFArg(Vector3.new(0, 26, 0))
+        return result
+    end)
 end
 
 local REDUCED_MANA_CLASSES = {}
@@ -69,6 +73,31 @@ local spoofHook; spoofHook = hookmetamethod(game, '__namecall', function(self, .
     end
     return spoofHook(self, ...)
 end)
+
+CommandsAPIService.PostCommand {
+    Name = "groupspoof",
+    Description = "Spoof a group spells to cause mayhem!",
+    Callback = function(default: boolean?, ...)
+        for _, key in ipairs({...}) do
+            local spoof = GLOBAL.SpoofedSpells[key]
+            if spoof then
+                spoof.Enabled = if default ~= nil then default else true
+            end
+        end
+    end,
+    Arguments = {spellName = "string", toggle = {"boolean", "opt"}}
+}
+
+CommandsAPIService.PostCommand {
+    Name = "spoofall",
+    Description = "Spoof a all spells to cause mayhem!",
+    Callback = function(default: boolean?)
+        for _, spoof in ipairs(GLOBAL.SpoofedSpells) do
+            spoof.Enabled = if default ~= nil then default else true
+        end
+    end,
+    Arguments = {spellName = "string", toggle = {"boolean", "opt"}}
+}
 
 CommandsAPIService.PostCommand {
     Name = "spoofspell",

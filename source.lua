@@ -74,7 +74,6 @@ local ArgumentParser = {} do
     local PLAYER_TYPE = "plr"
 
     local function validateType(type, stype)
-        
         if stype == OPTIONAL then
             return true
         elseif (type == "number" or type == "boolean") then
@@ -83,9 +82,8 @@ local ArgumentParser = {} do
             if stype == PLAYER_TYPE then
                 return true, "Player"
             end
-            return true
         end
-        return false
+        return true
     end
 
     function ArgumentParser.new(args: {[string]: string | {string}})
