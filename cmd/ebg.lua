@@ -1,5 +1,6 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
 
 local GLOBAL = getgenv()
 
@@ -9,6 +10,8 @@ local MakeChatSystemMessage = GLOBAL.MakeChatSystemMessage
 local GetNearestPlayer = GLOBAL.GetNearestPlayer
 local GetNearestPlayersFromRadius = GLOBAL.GetNearestPlayersFromRadius
 local RaycastToMouse = GLOBAL.RaycastToMouse
+
+GLOBAL.GenericKeybinds.AutoPunch = Enum.KeyCode.V
 
 GLOBAL.SpoofedSpells = {} do
     local Spoof = {}
@@ -45,10 +48,10 @@ GLOBAL.SpoofedSpells = {} do
         return result
     end)
     Spoof.new("Water Beam", false, function(old)
-        return {Origin = ResultCollage.CFArg(Vector3.new(0, -2, 0)).Position}
+        return {Origin = ResultCollage.CFArg(Vector3.zero).Position}
     end)
     Spoof.new("Auroral Blast", false, function(old)
-        return {Origin = ResultCollage.CFArg(Vector3.new(0, -2, 0)).Position}
+        return {Origin = ResultCollage.CFArg(Vector3.zero).Position}
     end)
     Spoof.new("Blaze Column", false, function(old)
         local result = ResultCollage.CFArg(Vector3.new(0, -1.5, 0))
@@ -112,7 +115,7 @@ CommandsAPIService.PostCommand {
                 spoof.Enabled = if default ~= nil then default else true
             end
         end
-        return "Successfully " .. (if (if default then default else true) then "spoofed " else "unspoofed ") .. "spells: " .. table.concat({...}, "\n")
+        return "Successfully " .. (if (if default ~= nil then default else true) then "spoofed " else "unspoofed ") .. "spells: " .. table.concat({...}, "\n")
     end,
     Arguments = {spellName = "string", toggle = {"boolean", "opt"}}
 }
@@ -124,7 +127,7 @@ CommandsAPIService.PostCommand {
         for _, spoof in pairs(GLOBAL.SpoofedSpells) do
             spoof.Enabled = if default ~= nil then default else true
         end
-        return "Successfully " .. (if (if default then default else true) then "spoofed " else "unspoofed ") .. "every spell"
+        return "Successfully " .. (if (if default ~= nil then default else true) then "spoofed " else "unspoofed ") .. "every spell"
     end,
     Arguments = {spellName = "string", toggle = {"boolean", "opt"}}
 }
@@ -136,8 +139,9 @@ CommandsAPIService.PostCommand {
         local spoof = GLOBAL.SpoofedSpells[spellName]
         if spoof then
             spoof.Enabled = if default ~= nil then default else true
+            return "Successfully " .. (if spoof.Enabled then "spoofed " else "unspoofed ") .. spellName
         end
-        return "Successfully " .. (if (if default then default else true) then "spoofed " else "unspoofed ") .. spellName
+        return "Unable to find spell " .. spellName
     end,
     Arguments = {spellName = "string", toggle = {"boolean", "opt"}}
 }
@@ -202,8 +206,8 @@ CommandsAPIService.PostCommand {
     Name = "toggleinfstamina",
     Description = "Toggle infite stamina, running and flipping won't consume any stamina",
     Callback = function(out: boolean)
-        infStaminaActive = out
-        return (if out then "Enabled" else "Disabled") .. " infinite stamina"
+        infStaminaActive = if out ~= nil then out else false
+        return (if infStaminaActive then "Enabled" else "Disabled") .. " infinite stamina"
     end,
     Arguments = {out = "boolean"}
 }
@@ -213,8 +217,8 @@ CommandsAPIService.PostCommand {
     Name = "toggleautopunch",
     Description = "Toggle autopunch, will punch players inside a 12-stud radius",
     Callback = function(out: boolean)
-        autoPunchActive = out
-        return (if out then "Enabled" else "Disabled") .. " auto punch"
+        autoPunchActive = if out ~= nil then out else false
+        return (if autoPunchActive then "Enabled" else "Disabled") .. " auto punch"
     end,
     Arguments = {out = "boolean"}
 }
@@ -232,5 +236,12 @@ table.insert(GLOBAL.GenericCleanup, RunService.Heartbeat:Connect(function(dt)
                 end
             end
         end
+    end
+end))
+table.insert(GLOBAL.GenericCleanup, UserInputService.InputBegan:Connect(function(input: InputObject, gpe: boolean)
+    if gpe then return end
+    if input.KeyCode == GLOBAL.GenericKeybinds.AutoPunch then
+        autoPunchActive = not autoPunchActive
+        MakeChatSystemMessage.Out((if autoPunchActive then "Enabled" else "Disabled") .. " auto punch", MakeChatSystemMessage.Colors[2])
     end
 end))

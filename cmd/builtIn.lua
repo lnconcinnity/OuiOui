@@ -83,7 +83,6 @@ local function GetNearestPlayersFromRadius(radius)
     for _, player in ipairs(Players:GetPlayers()) do
         if player == Players.LocalPlayer then continue end
         local dist = player:DistanceFromCharacter(humanoidRootPart.Position)
-        print(dist)
         if dist < (radius or 50) then
             nearestPlayers[#nearestPlayers+1] = player
         end
