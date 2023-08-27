@@ -379,7 +379,7 @@ table.insert(GLOBAL.GenericCleanup, UserInputService.InputBegan:Connect(function
                         local vel = humanoid.RootPart.AssemblyLinearVelocity
                         if vel:Dot(vel) > 0 then
                             local possibleFuture = targetPosition + (vel.Unit * humanoid.WalkSpeed)
-                            local direction = (possibleFuture - targetPosition).Unit * GLOBAL.WorldDelta * vel.Magnitude * 1.2
+                            local direction = (possibleFuture - targetPosition).Unit * GLOBAL.WorldDelta * vel.Magnitude * (humanoid.WalkSpeed * 0.25)
                             predict = targetPosition + direction
                         end
                         GetHumanoidRootPart().CFrame = CFrame.new(predict) * CFrame.new(Vector3.zero, workspace.CurrentCamera.CFrame.LookVector)
