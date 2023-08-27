@@ -14,7 +14,7 @@ GLOBAL.GenericKeybinds = GLOBAL.GenericKeybinds or {
 }
 
 if GLOBAL.GenericCleanup and #GLOBAL.GenericCleanup then
-    for i = 1, #GLOBAL.GenericConnections do
+    for i = 1, #GLOBAL.GenericCleanup do
         local cleanup = GLOBAL.GenericCleanup[i]
         if type(cleanup) == "function" then
             cleanup()
@@ -26,6 +26,8 @@ if GLOBAL.GenericCleanup and #GLOBAL.GenericCleanup then
     end
 end
 GLOBAL.GenericCleanup = {}
+GLOBAL.WorldDelta = 0
+GLOBAL.WorldTime = 0
 
 local require = GLOBAL.require
 local CommandsAPIService = GLOBAL.CommandsAPIService
@@ -365,7 +367,9 @@ table.insert(GLOBAL.GenericCleanup, UserInputService.InputBegan:Connect(function
         flyInputs[input.KeyCode] = true
     end
 end))
-table.insert(GLOBAL.GenericCleanup, RunService.Stepped:Connect(function()
+table.insert(GLOBAL.GenericCleanup, RunService.Stepped:Connect(function(t, dt)
+    GLOBAL.WorldDelta = dt
+    GLOBAL.WorldTime = t
     if flightStateEnabled then
         for cache in pairs(cacheParts) do
             cache.CanCollide = false

@@ -247,7 +247,7 @@ CommandsAPIService.PostCommand {
         for _, connection in ipairs(getconnections(ReverseSpeed.OnClientEvent)) do
             connection[if ok then "Enable" else "Disable"](connection)
         end
-        return (if ok then "Enabled" else "Disabled") .. " auto punch"
+        return (if ok then "Enabled" else "Disabled") .. " movement inversion"
     end,
     Arguments = {out = "boolean"}
 }
