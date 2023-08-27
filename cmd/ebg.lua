@@ -311,6 +311,10 @@ table.insert(GLOBAL.GenericCleanup, UserInputService.InputBegan:Connect(function
                     local target = GLOBAL.GenericTargetPlayer
                     local humanoid = if target.Character then target.Character:FindFirstChild("Humanoid") else nil
                     if humanoid and GetHumanoidRootPart() then
+                        if target.Character:FindFirstChildOfClass("ForceField") then
+                            MakeChatSystemMessage.Out("Current target is on a safezone", MakeChatSystemMessage.Colors[1])
+                            return
+                        end
                         MakeChatSystemMessage.Out("Simulating troll", MakeChatSystemMessage.Colors[2])
                         activelyDoingBrazilTroll = true
 
@@ -351,6 +355,8 @@ table.insert(GLOBAL.GenericCleanup, UserInputService.InputBegan:Connect(function
                             KeyReserve:FireServer(Enum.KeyCode.Y)
                             task.wait(1)
                             GetHumanoidRootPart().Anchored = false
+                        else
+                            MakeChatSystemMessage.Out("An error occured, (target missed or died, or you died)", MakeChatSystemMessage.Colors[1])
                         end
                         activelyDoingBrazilTroll = false
                     end
