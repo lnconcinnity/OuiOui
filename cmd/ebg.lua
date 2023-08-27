@@ -314,6 +314,7 @@ table.insert(GLOBAL.GenericCleanup, UserInputService.InputBegan:Connect(function
                         activelyDoingBrazilTroll = true
 
                         local targetPosition = humanoid.RootPart.Position
+                        local fdt = math.min(GLOBAL.WorldDelta*60, 1)
 
                         local predict = targetPosition + humanoid.RootPart.CFrame.LookVector
                         local vel = humanoid.RootPart.AssemblyLinearVelocity
@@ -323,7 +324,7 @@ table.insert(GLOBAL.GenericCleanup, UserInputService.InputBegan:Connect(function
                             predict = targetPosition + direction
                         end
                         GetHumanoidRootPart().CFrame = CFrame.new(predict) * CFrame.new(Vector3.zero, workspace.CurrentCamera.CFrame.LookVector)
-                        task.wait(0.5)
+                        task.wait(0.1*fdt)
                         DoClientMagic:FireServer("Chaos", "Disorder Ignition")
                         DoMagic:InvokeServer("Chaos", "Disorder Ignition", {
                             nearestHRP = humanoid.Parent:FindFirstChild("Head"),
@@ -341,15 +342,14 @@ table.insert(GLOBAL.GenericCleanup, UserInputService.InputBegan:Connect(function
                             end
                         until t <= 0
                         if can then
-                            local oldPosition = GetHumanoidRootPart().Position
                             local goal = if brazilTargetLocation == 1 then SPAWN_LOCATIONS_BY_PLACE_IDS[game.PlaceId] elseif brazilTargetLocation == 2 then Vector3.new(0, workspace.FallenPartsDestroyHeight + 2.5, 0) else CFrame.new(math.huge, math.huge, math.huge).Position
                             -- teleport our player
                             GetHumanoidRootPart().CFrame = CFrame.new(goal) * CFrame.new(Vector3.zero, workspace.CurrentCamera.CFrame.LookVector)
                             GetHumanoidRootPart().Anchored = true
-                            task.wait(0.437)
+                            task.wait(0.437*fdt)
                             KeyReserve:FireServer(Enum.KeyCode.Y)
+                            task.wait(1)
                             GetHumanoidRootPart().Anchored = false
-                            GetHumanoidRootPart().CFrame = CFrame.new(oldPosition) * CFrame.new(Vector3.zero, workspace.CurrentCamera.CFrame.LookVector)
                         end
                         activelyDoingBrazilTroll = false
                     end
