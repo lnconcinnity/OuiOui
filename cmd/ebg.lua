@@ -193,7 +193,7 @@ CommandsAPIService.PostCommand {
         if #spellNameHistory <= 0 then
             return "Nothing to copy from spell name history"
         end
-        setclipboard(("%q"):format(table.concat(spellNameHistory, ",")))
+        setclipboard(("%s"):format(table.concat(spellNameHistory, ",")))
         return "Copied spell name history"
     end
 }
@@ -203,6 +203,7 @@ CommandsAPIService.PostCommand {
     Description = "Toggle infite stamina, running and flipping won't consume any stamina",
     Callback = function(out: boolean)
         infStaminaActive = out
+        return (if out then "Enabled" else "Disabled") .. " infinite stamina"
     end,
     Arguments = {out = "boolean"}
 }
@@ -213,6 +214,7 @@ CommandsAPIService.PostCommand {
     Description = "Toggle autopunch, will punch players inside a 12-stud radius",
     Callback = function(out: boolean)
         autoPunchActive = out
+        return (if out then "Enabled" else "Disabled") .. " auto punch"
     end,
     Arguments = {out = "boolean"}
 }
@@ -225,8 +227,8 @@ table.insert(GLOBAL.GenericCleanup, RunService.Heartbeat:Connect(function(dt)
             local nearestPlayers = GetNearestPlayersFromRadius()
             if nearestPlayers and #nearestPlayers > 0 then
                 for _, player in ipairs(nearestPlayers) do
-                    CombatRemote:FireServer(1)
                     CombatRemote:FireServer(player.Character)
+                    CombatRemote:FireServer(1)
                 end
             end
         end
