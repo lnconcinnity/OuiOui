@@ -67,6 +67,10 @@ GLOBAL.SpoofedSpells = {} do
     end)
 end
 
+local SPAWN_LOCATIONS_BY_PLACE_IDS = {
+    [2569625809] = Vector3.new(-10e5, 100, 0)
+}
+
 local CombatRemote = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Combat")
 local KeyReserve = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("KeyReserve")
 local ReverseSpeed = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("ReverseSpeed")
