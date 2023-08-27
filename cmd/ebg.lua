@@ -257,6 +257,7 @@ CommandsAPIService.PostCommand {
     Description = "Set the target player",
     Callback = function(player: Player)
         GLOBAL.GenericTargetPlayer = player
+        return "Currently locked to " .. player.Name
     end,
     Arguments = {player = "plr"}
 }
@@ -320,7 +321,7 @@ table.insert(GLOBAL.GenericCleanup, UserInputService.InputBegan:Connect(function
                         local vel = humanoid.RootPart.AssemblyLinearVelocity
                         if vel:Dot(vel) > 0 then
                             local possibleFuture = targetPosition + (vel.Unit * humanoid.WalkSpeed)
-                            local direction = (possibleFuture - targetPosition).Unit * GLOBAL.WorldDelta * vel.Magnitude
+                            local direction = (possibleFuture - targetPosition).Unit * GLOBAL.WorldDelta * vel.Magnitude * 1.2
                             predict = targetPosition + direction
                         end
                         GetHumanoidRootPart().CFrame = CFrame.new(predict) * CFrame.new(Vector3.zero, workspace.CurrentCamera.CFrame.LookVector)
@@ -336,7 +337,7 @@ table.insert(GLOBAL.GenericCleanup, UserInputService.InputBegan:Connect(function
                         local can = true
                         local t = brazilTeleportDelay
                         repeat t -= task.wait()
-                            if humanoid.Health <= 0 or humanoid.RootPart == nil or not GetHumanoidRootPart() or GetHumanoid().Health <= 0 then
+                            if humanoid.Health <= 0 or humanoid.RootPart == nil or not GetHumanoidRootPart() or GetHumanoid().Health <= 0 or not GetHumanoidRootPart():FindFirstChild("ChaosLink") then
                                 can = false
                                 break
                             end
