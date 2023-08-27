@@ -64,6 +64,9 @@ local CombatRemote = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Com
 
 local autoPunchActive = false
 local infStaminaActive = false
+local recordingSpellInfo = false
+
+local spellNameHistory = {}
 
 local lastPunchIteration = 0
 
@@ -88,6 +91,11 @@ local namecallHook; namecallHook = hookmetamethod(game, '__namecall', function(s
                     args[2] = false
                 end
                 return namecallHook(self, table.unpack(args))
+            end
+        elseif self.Name == "DoClientMagic" then
+            if recordingSpellInfo then
+                local spellName = select(2, ...)
+                spellNameHistory[#spellNameHistory+1] = spellName
             end
         end
     end
@@ -157,6 +165,37 @@ CommandsAPIService.PostCommand {
         end
         return ("Current spoofable spells: \n%s"):format(table.concat(spoofable, '\n'))
     end,
+}
+
+CommandsAPIService.PostCommand {
+    Name = "devrecordspellnames",
+    Description = "Record spell names, mostly for testing and spell gathering purposes",
+    Callback = function()
+        table.clear(spellNameHistory)
+        recordingSpellInfo = true
+        return "Recording spell name history"
+    end
+}
+
+CommandsAPIService.PostCommand {
+    Name = 'devstoprecordspellnames',
+    Description = "Stop recording spell names, mostly for testing and spell gathering purposes",
+    Callback = function()
+        recordingSpellInfo = false
+        return "Stopped recording spell name history"
+    end
+}
+
+CommandsAPIService.PostCommand {
+    Name = 'devcopyspellnamehistory',
+    Description = "Copy recorded spell name  history mostly for testing and spell gathering purposes",
+    Callback = function()
+        if #spellNameHistory <= 0 then
+            return "Nothing to copy from spell name history"
+        end
+        setclipboard(("%q"):format(table.concat(spellNameHistory, ",")))
+        return "Copied spell name history"
+    end
 }
 
 CommandsAPIService.PostCommand {
