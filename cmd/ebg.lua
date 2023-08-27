@@ -310,6 +310,7 @@ CommandsAPIService.PostCommand {
                     if now - lastIncomingDamage >= 3 or now - start >= 10 then
                         conn:Disconnect()
                         hpChanged:Disconnect()
+                        activelyRecordingDamage = false
                         if totalDamage <= 0 then
                             MakeChatSystemMessage.Out("No damage was taken within recording time", MakeChatSystemMessage.Colors[1])
                         else
@@ -320,15 +321,19 @@ CommandsAPIService.PostCommand {
             end
 
             local _oldHealth = 0
+            local baseHealth = nil
             hpChanged = humanoid.HealthChanged:Connect(function(health)
                 if health < _oldHealth then
                     lastIncomingDamage = tick()
+                    if not baseHealth then
+                        baseHealth = humanoid.Health
+                    end
                     if not recording then
                         recording = true
                         setupRecorder()
                     end
 
-                    totalDamage = _oldHealth - health
+                    totalDamage = baseHealth - health
                 end
                 _oldHealth = health
             end)
