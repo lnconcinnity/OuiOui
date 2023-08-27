@@ -83,6 +83,7 @@ local recordingSpellInfo = false
 local brazilEnabled = false
 
 local activelyDoingBrazilTroll = false
+local activelyRecordingDamage = false
 
 local brazilTeleportDelay = 3.07
 local brazilTargetLocation = 2-- 1 = spawn, 2 = void, 3 = nullzone
@@ -284,6 +285,59 @@ CommandsAPIService.PostCommand {
     end
 }
 
+CommandsAPIService.PostCommand {
+    Name = "recorddamageoutput",
+    Description = "Record the overall damage dealt to the set target player",
+    Callback = function()
+        if activelyRecordingDamage then
+            return "Currently recording damage, please wait"
+        end
+        local target = GLOBAL.GenericTargetPlayer
+        local humanoid = if target.Character then target.Character:FindFirstChild("Humanoid") else nil
+        if humanoid then
+            activelyRecordingDamage = true
+
+            local lastIncomingDamage = 0
+            local start = tick()
+            local recording = false
+            local hpChanged;
+
+            local totalDamage = 0
+
+            local function setupRecorder()
+                local conn; conn = RunService.Heartbeat:Connect(function()
+                    local now = tick()
+                    if now - lastIncomingDamage >= 3 or now - start >= 10 then
+                        conn:Disconnect()
+                        hpChanged:Disconnect()
+                        if totalDamage <= 0 then
+                            MakeChatSystemMessage.Out("No damage was taken within recording time", MakeChatSystemMessage.Colors[1])
+                        else
+                            MakeChatSystemMessage.Out("Dealt a total of " .. tostring(totalDamage * 10) .. " damage", MakeChatSystemMessage.Colors[2])
+                        end
+                    end
+                end)
+            end
+
+            local _oldHealth = 0
+            hpChanged = humanoid.HealthChanged:Connect(function(health)
+                if health < _oldHealth then
+                    lastIncomingDamage = tick()
+                    if not recording then
+                        recording = true
+                        setupRecorder()
+                    end
+
+                    totalDamage = _oldHealth - health
+                end
+                _oldHealth = health
+            end)
+        else
+            MakeChatSystemMessage.Out("Target does not exist", MakeChatSystemMessage.Colors[1])
+        end
+    end
+}
+
 table.insert(GLOBAL.GenericCleanup, RunService.Heartbeat:Connect(function(dt)
     if autoPunchActive then
         local now = tick()
@@ -329,7 +383,7 @@ table.insert(GLOBAL.GenericCleanup, UserInputService.InputBegan:Connect(function
                             predict = targetPosition + direction
                         end
                         GetHumanoidRootPart().CFrame = CFrame.new(predict) * CFrame.new(Vector3.zero, workspace.CurrentCamera.CFrame.LookVector)
-                        task.wait(0.1*fdt)
+                        task.wait(0.174*fdt)
                         DoClientMagic:FireServer("Chaos", "Disorder Ignition")
                         DoMagic:InvokeServer("Chaos", "Disorder Ignition", {
                             nearestHRP = humanoid.Parent:FindFirstChild("Head"),
@@ -341,11 +395,12 @@ table.insert(GLOBAL.GenericCleanup, UserInputService.InputBegan:Connect(function
                         local can = true
                         local t = brazilTeleportDelay
                         repeat t -= task.wait()
-                            if humanoid.Health <= 0 or humanoid.RootPart == nil or not GetHumanoidRootPart() or GetHumanoid().Health <= 0 or not GetHumanoidRootPart():FindFirstChild("ChaosLink") then
+                            if humanoid.Health <= 0 or humanoid.RootPart == nil or not GetHumanoidRootPart() or GetHumanoid().Health <= 0 then
                                 can = false
                                 break
                             end
                         until t <= 0
+                        if not GetHumanoidRootPart():FindFirstChild("ChaosLink") then can = false end
                         if can then
                             local goal = if brazilTargetLocation == 1 then SPAWN_LOCATIONS_BY_PLACE_IDS[game.PlaceId] elseif brazilTargetLocation == 2 then Vector3.new(0, workspace.FallenPartsDestroyHeight + 2.5, 0) else CFrame.new(math.huge, math.huge, math.huge).Position
                             -- teleport our player
@@ -359,6 +414,8 @@ table.insert(GLOBAL.GenericCleanup, UserInputService.InputBegan:Connect(function
                             MakeChatSystemMessage.Out("An error occured, (target missed or died, or you died)", MakeChatSystemMessage.Colors[1])
                         end
                         activelyDoingBrazilTroll = false
+                    else
+                        MakeChatSystemMessage.Out("Target does not exist", MakeChatSystemMessage.Colors[1])
                     end
                 end
             else
