@@ -405,6 +405,7 @@ table.insert(GLOBAL.GenericCleanup, UserInputService.InputBegan:Connect(function
                             local goal = if brazilTargetLocation == 1 then SPAWN_LOCATIONS_BY_PLACE_IDS[game.PlaceId] elseif brazilTargetLocation == 2 then Vector3.new(0, workspace.FallenPartsDestroyHeight + 2.5, 0) else CFrame.new(math.huge, math.huge, math.huge).Position
                             -- teleport our player
                             GetHumanoidRootPart().CFrame = CFrame.new(goal) * CFrame.new(Vector3.zero, workspace.CurrentCamera.CFrame.LookVector)
+                            task.wait()
                             GetHumanoidRootPart().Anchored = true
                             task.wait(0.437*fdt)
                             KeyReserve:FireServer(Enum.KeyCode.Y)
