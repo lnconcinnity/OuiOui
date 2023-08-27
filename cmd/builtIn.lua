@@ -171,6 +171,9 @@ GLOBAL.RaycastToMouse = RaycastToMouse
 GLOBAL.GetHumanoidRootPart = function()
     return humanoidRootPart
 end
+GLOBAL.GetHumanoid = function()
+    return humanoid
+end
 
 CommandsAPIService.PostCommand {
     Name = "help",

@@ -10,8 +10,12 @@ local MakeChatSystemMessage = GLOBAL.MakeChatSystemMessage
 local GetNearestPlayer = GLOBAL.GetNearestPlayer
 local GetNearestPlayersFromRadius = GLOBAL.GetNearestPlayersFromRadius
 local RaycastToMouse = GLOBAL.RaycastToMouse
+local GetHumanoidRootPart, GetHumanoid = GLOBAL.GetHumanoidRootPart, GLOBAL.GetHumanoid
 
 GLOBAL.GenericKeybinds.AutoPunch = Enum.KeyCode.V
+GLOBAL.GenericKeybinds.Brazil = Enum.KeyCode.X
+
+GLOBAL.GenericTargetPlayer = nil
 
 GLOBAL.SpoofedSpells = {} do
     local Spoof = {}
@@ -64,11 +68,20 @@ GLOBAL.SpoofedSpells = {} do
 end
 
 local CombatRemote = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Combat")
+local KeyReserve = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("KeyReserve")
+local ReverseSpeed = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("ReverseSpeed")
+local DoMagic = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("DoMagic")
+local DoClientMagic = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("DoClientMagic")
 
 local autoPunchActive = false
 local infStaminaActive = false
 local recordingSpellInfo = false
+local brazilEnabled = false
 
+local activelyDoingBrazilTroll = false
+
+local brazilTeleportDelay = 3.07
+local brazilTargetLocation = 2-- 1 = spawn, 2 = void, 3 = nullzone
 local spellNameHistory = {}
 
 local lastPunchIteration = 0
@@ -212,15 +225,58 @@ CommandsAPIService.PostCommand {
     Arguments = {out = "boolean"}
 }
 
-
 CommandsAPIService.PostCommand {
-    Name = "toggleautopunch",
-    Description = "Toggle autopunch, will punch players inside a 12-stud radius",
+    Name = "toggleaura",
+    Description = "Toggle punch aura, will punch players inside a 12-stud radius",
     Callback = function(out: boolean)
         autoPunchActive = if out ~= nil then out else false
         return (if autoPunchActive then "Enabled" else "Disabled") .. " auto punch"
     end,
     Arguments = {out = "boolean"}
+}
+
+CommandsAPIService.PostCommand {
+    Name = "togglereversespeed",
+    Description = "Toggle if you want to your movement to be inverted or not when hit by Ace up the sleeve spell",
+    Callback = function(out: boolean)
+        local ok = if out ~= nil then out else false
+        for _, connection in ipairs(getconnections(ReverseSpeed.OnClientEvent)) do
+            connection[if ok then "Enable" else "Disable"](connection)
+        end
+        return (if ok then "Enabled" else "Disabled") .. " auto punch"
+    end,
+    Arguments = {out = "boolean"}
+}
+
+CommandsAPIService.PostCommand {
+    Name = "lockto",
+    Description = "Set the target player",
+    Callback = function(player: Player)
+        GLOBAL.GenericTargetPlayer = player
+    end,
+    Arguments = {player = "plr"}
+}
+
+CommandsAPIService.PostCommand {
+    Name = "setbrazilenabled",
+    Description = "A troll command where, as long as you have disorder ignition, you send the to a target location defined by the command 'setbrazilloc'",
+    Callback = function(out: boolean)
+        brazilEnabled = if out ~= nil then out else false
+        return (if brazilEnabled then "Enabled" else "Disabled") .. " Brazil Troll command"
+    end,
+    Arguments = {out = "boolean"}
+}
+
+CommandsAPIService.PostCommand {
+    Name = "setbrazilloc",
+    Description = "Set the target destination of the troll",
+    Callback = function(option: number)
+        if option > 3 or option < 1 then
+            error("Destination must be an interger between 1 to 3")
+        end
+        brazilTargetLocation = option
+        return ("Set target location to %s"):format(if option == 1 then "Spawn" elseif option == 2 then "Void" else "Floating point")
+    end
 }
 
 table.insert(GLOBAL.GenericCleanup, RunService.Heartbeat:Connect(function(dt)
@@ -243,5 +299,60 @@ table.insert(GLOBAL.GenericCleanup, UserInputService.InputBegan:Connect(function
     if input.KeyCode == GLOBAL.GenericKeybinds.AutoPunch then
         autoPunchActive = not autoPunchActive
         MakeChatSystemMessage.Out((if autoPunchActive then "Enabled" else "Disabled") .. " auto punch", MakeChatSystemMessage.Colors[2])
+    elseif input.KeyCode == GLOBAL.GenericKeybinds.Brazil then
+        if brazilEnabled then
+            if not activelyDoingBrazilTroll then
+                if GLOBAL.GenericTargetPlayer then
+                    local target = GLOBAL.GenericTargetPlayer
+                    local humanoid = if target.Character then target.Character:FindFirstChild("Humanoid") else nil
+                    if humanoid and GetHumanoidRootPart() then
+                        MakeChatSystemMessage.Out("Simulating troll", MakeChatSystemMessage.Colors[2])
+                        activelyDoingBrazilTroll = true
+
+                        local targetPosition = humanoid.RootPart.Position
+
+                        local predict = targetPosition + humanoid.RootPart.CFrame.LookVector
+                        local vel = humanoid.RootPart.AssemblyLinearVelocity
+                        if vel:Dot(vel) > 0 then
+                            local possibleFuture = targetPosition + (vel.Unit * humanoid.WalkSpeed)
+                            local direction = (possibleFuture - targetPosition).Unit * GLOBAL.WorldDelta * vel.Magnitude
+                            predict = targetPosition + direction
+                        end
+                        GetHumanoidRootPart().CFrame = CFrame.new(predict) * CFrame.new(Vector3.zero, workspace.CurrentCamera.CFrame.LookVector)
+                        task.wait(0.5)
+                        DoClientMagic:FireServer("Chaos", "Disorder Ignition")
+                        DoMagic:InvokeServer("Chaos", "Disorder Ignition", {
+                            nearestHRP = humanoid.Parent:FindFirstChild("Head"),
+                            nearestPlayer = target,
+                            rpos = targetPosition,
+                            norm = Vector3.yAxis,
+                            rhit = workspace:WaitForChild("Map"):WaitForChild("Part")
+                        })
+                        local can = true
+                        local t = brazilTeleportDelay
+                        repeat t -= task.wait()
+                            if humanoid.Health <= 0 or humanoid.RootPart == nil or not GetHumanoidRootPart() or GetHumanoid().Health <= 0 then
+                                can = false
+                                break
+                            end
+                        until t <= 0
+                        if can then
+                            local oldPosition = GetHumanoidRootPart().Position
+                            local goal = if brazilTargetLocation == 1 then SPAWN_LOCATIONS_BY_PLACE_IDS[game.PlaceId] elseif brazilTargetLocation == 2 then Vector3.new(0, workspace.FallenPartsDestroyHeight + 2.5, 0) else CFrame.new(math.huge, math.huge, math.huge).Position
+                            -- teleport our player
+                            GetHumanoidRootPart().CFrame = CFrame.new(goal) * CFrame.new(Vector3.zero, workspace.CurrentCamera.CFrame.LookVector)
+                            GetHumanoidRootPart().Anchored = true
+                            task.wait(0.437)
+                            KeyReserve:FireServer(Enum.KeyCode.Y)
+                            GetHumanoidRootPart().Anchored = false
+                            GetHumanoidRootPart().CFrame = CFrame.new(oldPosition) * CFrame.new(Vector3.zero, workspace.CurrentCamera.CFrame.LookVector)
+                        end
+                        activelyDoingBrazilTroll = false
+                    end
+                end
+            else
+                MakeChatSystemMessage.Out("A troll is currently commencing, please try again later", MakeChatSystemMessage.Colors[1])
+            end
+        end
     end
 end))

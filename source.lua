@@ -133,11 +133,17 @@ local Command = {} do
                 local ok, typeOrErr = self.Command.Parser:Validate(out, i)
                 if ok then
                     if typeOrErr == "Player" then
-                        local player = Players:FindFirstChild(arg)
-                        if not player then
+                        local found = nil
+                        for _, player in ipairs(Players:GetPlayers()) do
+                            if player.Name:sub(1, #out) == out then
+                                found = player
+                                break
+                            end
+                        end
+                        if not found then
                             return false, "Could not find the player " .. arg
                         end
-                        out = player
+                        out = found
                     end
                 else
                     return false, typeOrErr
