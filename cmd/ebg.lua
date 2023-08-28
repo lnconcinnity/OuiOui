@@ -52,10 +52,12 @@ GLOBAL.SpoofedSpells = {} do
         return result
     end)
     Spoof.new("Water Beam", false, function(old)
-        return {Origin = ResultCollage.CFArg(Vector3.zero).Position}
+        local result = RaycastToMouse(nil, true)
+        return {Origin = result.Position+(result.Normal*2)}
     end)
     Spoof.new("Auroral Blast", false, function(old)
-        return {Origin = ResultCollage.CFArg(Vector3.zero).Position}
+        local result = RaycastToMouse(nil, true)
+        return {Origin = result.Position+(result.Normal*2)}
     end)
     Spoof.new("Blaze Column", false, function(old)
         local result = ResultCollage.CFArg(Vector3.new(0, -1.5, 0))
@@ -391,7 +393,7 @@ table.insert(GLOBAL.GenericCleanup, UserInputService.InputBegan:Connect(function
                         local vel = humanoid.RootPart.AssemblyLinearVelocity
                         if vel:Dot(vel) > 0 then
                             local possibleFuture = targetPosition + (vel.Unit * humanoid.WalkSpeed)
-                            local direction = (possibleFuture - targetPosition).Unit * GLOBAL.WorldDelta * vel.Magnitude * (humanoid.WalkSpeed * 0.25)
+                            local direction = (possibleFuture - targetPosition).Unit * GLOBAL.WorldDelta * (vel.Magnitude + (humanoid.WalkSpeed*1.2))
                             predict = targetPosition + direction
                         end
                         GetHumanoidRootPart().CFrame = CFrame.new(predict) * CFrame.new(Vector3.zero, workspace.CurrentCamera.CFrame.LookVector)
@@ -417,12 +419,8 @@ table.insert(GLOBAL.GenericCleanup, UserInputService.InputBegan:Connect(function
                             local goal = if brazilTargetLocation == 1 then SPAWN_LOCATIONS_BY_PLACE_IDS[game.PlaceId] elseif brazilTargetLocation == 2 then Vector3.new(0, workspace.FallenPartsDestroyHeight + 2.5, 0) else CFrame.new(math.huge, math.huge, math.huge).Position
                             -- teleport our player
                             GetHumanoidRootPart().CFrame = CFrame.new(goal) * CFrame.new(Vector3.zero, workspace.CurrentCamera.CFrame.LookVector)
-                            task.wait()
-                            GetHumanoidRootPart().Anchored = true
-                            task.wait(0.437*fdt)
+                            task.wait(0.2*fdt)
                             KeyReserve:FireServer(Enum.KeyCode.Y)
-                            task.wait(1)
-                            GetHumanoidRootPart().Anchored = false
                         else
                             MakeChatSystemMessage.Out("An error occured, (target missed or died, or you died)", MakeChatSystemMessage.Colors[1])
                         end
