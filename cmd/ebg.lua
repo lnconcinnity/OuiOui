@@ -466,7 +466,7 @@ table.insert(GLOBAL.GenericCleanup, RunService.Stepped:Connect(function(t, dt)
                 if (rootPart.Position-GetHumanoidRootPart().Position).Magnitude <= 150 then
                     local result = workspace:Raycast(vec, GetHumanoidRootPart().Position-vec, params)
                     if result then
-                        if not simulatingOffsetCheck and not GLOBAL.GenericAimbotHalted then
+                        if not simulatingOffsetCheck and not GLOBAL.GenericAimbotHalted and aimbotHeightOffset.Y > 0 then
                             simulatingOffsetCheck = true
                             local increment = 0.5
                             while true do
