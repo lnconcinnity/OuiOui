@@ -24,6 +24,7 @@ GLOBAL.GenericAimbotEnabled = false
 GLOBAL.GenericTargetPlayer = nil
 
 GLOBAL.SpoofedSpells = {} do
+    local IGNORE_SPELLS_FROM_AIMBOT = {'Lightning Flash', 'Rainbow Shockwave'}
     local Spoof = {}
     function Spoof.new(name: string, default: boolean?, callback: (old: any) -> any)
         local self = {
@@ -35,10 +36,15 @@ GLOBAL.SpoofedSpells = {} do
         return self
     end
 
+    local function getResultWithAimbotPos()
+        local result = RaycastToMouse(nil, true)
+        return {Position = (if GLOBAL.GenericAimbotEnabled then GLOBAL.GenericAimbotTargetPosition else result.Position), Normal = result.Normal}
+    end
+
     local ResultCollage = {}
     ResultCollage.CFArg = function(offset)
-        local result = RaycastToMouse(nil, true)
-        return CFrame.new(if GLOBAL.GenericAimbotEnabled then GLOBAL.GenericAimbotTargetPosition else result.Position + if offset then offset else Vector3.new(0, 0.25, 0))
+        local result = getResultWithAimbotPos()
+        return CFrame.new(result.Position + if offset then offset else Vector3.new(0, 0.25, 0))
     end
 
     Spoof.new("Lightning Barrage", false, function(old)
@@ -57,13 +63,20 @@ GLOBAL.SpoofedSpells = {} do
         local result = ResultCollage.CFArg()
         return result
     end)
-    Spoof.new("Water Beam", false, function(old)
+    Spoof.new("Lightning Flash", false, function(old)
         local result = RaycastToMouse(nil, true)
-        return {Origin = result.Position+(result.Normal*2)}
+        return {
+            Origin = old.Origin,
+            End = result.Position,
+        }
+    end)
+    Spoof.new("Water Beam", false, function(old)
+        local result = getResultWithAimbotPos()
+        return {Origin = result.Position+(result.Normal*7)}
     end)
     Spoof.new("Auroral Blast", false, function(old)
-        local result = RaycastToMouse(nil, true)
-        return {Origin = result.Position+(result.Normal*2)}
+        local result = getResultWithAimbotPos()
+        return {Origin = result.Position+(result.Normal*7)}
     end)
     Spoof.new("Blaze Column", false, function(old)
         local result = ResultCollage.CFArg(Vector3.new(0, -1.5, 0))
@@ -80,12 +93,6 @@ local UNRENDER_POSITION = Vector3.yAxis*10e5
 local SPAWN_LOCATIONS_BY_PLACE_IDS = {
     [2569625809] = Vector3.new(-10e5, 100, 0)
 }
-
-local CombatRemote = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Combat")
-local KeyReserve = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("KeyReserve")
-local ReverseSpeed = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("ReverseSpeed")
-local DoMagic = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("DoMagic")
-local DoClientMagic = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("DoClientMagic")
 
 local AIMBOT_HEADER = Instance.new("Part")
 AIMBOT_HEADER.Anchored = true
@@ -105,6 +112,12 @@ AIMBOT_HEADER_HIGHLIGHT.FillColor = Color3.new(1, 0, 1)
 AIMBOT_HEADER_HIGHLIGHT.OutlineTransparency = 0
 AIMBOT_HEADER_HIGHLIGHT.Parent = AIMBOT_HEADER
 
+local CombatRemote = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Combat")
+local KeyReserve = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("KeyReserve")
+local ReverseSpeed = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("ReverseSpeed")
+local DoMagic = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("DoMagic")
+local DoClientMagic = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("DoClientMagic")
+
 local aimbotHeightOffset = Vector3.zero
 
 local autoPunchActive = false
@@ -117,8 +130,6 @@ local reverseSpeedEnabled = false
 local simulatingOffsetCheck = false
 local activelyDoingBrazilTroll = false
 local activelyRecordingDamage = false
-
-local playerMouse = Players.LocalPlayer:GetMouse()
 
 local brazilTeleportDelay = 3.07
 local brazilTargetLocation = 2-- 1 = spawn, 2 = void, 3 = nullzone
@@ -431,10 +442,10 @@ table.insert(GLOBAL.GenericCleanup, RunService.Stepped:Connect(function(t, dt)
         local target = GLOBAL.GenericTargetPlayer
         local rootPart = if target.Character then target.Character:FindFirstChild("HumanoidRootPart") else nil
         if rootPart and GetHumanoidRootPart() then
-            local step = 0.2*if aimbotStepScalesWithDistance then (math.max((rootPart.Position-GetHumanoidRootPart().Position).Magnitude/10, 1)+0.5) else 1
+            local step = 0.35*if aimbotStepScalesWithDistance then (math.max((rootPart.Position-GetHumanoidRootPart().Position).Magnitude/10, 1)+0.5) else 1
             local v1 = rootPart.AssemblyLinearVelocity
             local t1 = v1/AIMBOT_MASS
-            local t2 = t1 + step*Vector3.one
+            local t2 = t1 + 0.35*Vector3.one
             local v2 = AIMBOT_MASS*t2
             local d = step*(t2-t1)*(v2+v1)
 
@@ -455,7 +466,7 @@ table.insert(GLOBAL.GenericCleanup, RunService.Stepped:Connect(function(t, dt)
                 if (rootPart.Position-GetHumanoidRootPart().Position).Magnitude <= 20 then
                     local result = workspace:Raycast(vec, GetHumanoidRootPart().Position-vec, params)
                     if result then
-                        if not simulatingOffsetCheck then
+                        if not simulatingOffsetCheck and not GLOBAL.GenericAimbotHalted then
                             simulatingOffsetCheck = true
                             local increment = 0.5
                             while true do
@@ -557,7 +568,7 @@ table.insert(GLOBAL.GenericCleanup, UserInputService.InputBegan:Connect(function
                         until t <= 0
                         if not GetHumanoidRootPart():FindFirstChild("ChaosLink") then can = false end
                         if can then
-                            local goal = if brazilTargetLocation == 1 then SPAWN_LOCATIONS_BY_PLACE_IDS[game.PlaceId] elseif brazilTargetLocation == 2 then Vector3.new(0, workspace.FallenPartsDestroyHeight + 2.5, 0) else CFrame.new(math.huge, math.huge, math.huge).Position
+                            local goal = if brazilTargetLocation == 1 then SPAWN_LOCATIONS_BY_PLACE_IDS[game.PlaceId] elseif brazilTargetLocation == 2 then Vector3.new(0, workspace.FallenPartsDestroyHeight + 2.5, 0) else CFrame.new(10e10, 10e10, 10e10).Position
                             -- teleport our player
                             GetHumanoidRootPart().CFrame = CFrame.new(goal) * CFrame.new(Vector3.zero, workspace.CurrentCamera.CFrame.LookVector)
                             task.wait(0.23*fdt)
