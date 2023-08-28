@@ -134,7 +134,7 @@ local mouseIndexHook; mouseIndexHook = hookmetamethod(playerMouse, '__index', fu
         end
         return CFrame.new(result.Position) * CFrame.lookAt(Vector3.zero, result.Normal)
     end
-    return mouseIndexHook
+    return mouseIndexHook(self, key)
 end)
 
 local namecallHook; namecallHook = hookmetamethod(game, '__namecall', function(self, ...)
