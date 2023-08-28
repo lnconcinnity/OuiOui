@@ -465,6 +465,7 @@ table.insert(GLOBAL.GenericCleanup, RunService.Stepped:Connect(function(t, dt)
                                 increment += 0.5
                             elseif increment > 30 then
                                 GLOBAL.GenericAimbotHalted = true
+                                break
                             else
                                 GLOBAL.GenericAimbotHalted = false
                                 aimbotHeightOffset = offset
