@@ -464,9 +464,10 @@ table.insert(GLOBAL.GenericCleanup, RunService.Stepped:Connect(function(t, dt)
             do
                 -- check for a space we can aim if the line is obscured, otherwise, disable aimbot for the time being
                 if (rootPart.Position-GetHumanoidRootPart().Position).Magnitude <= 150 then
-                    local result = workspace:Raycast(vec, GetHumanoidRootPart().Position-vec, params)
+                    local tg = vec+aimbotHeightOffset
+                    local result = workspace:Raycast(tg, GetHumanoidRootPart().Position-tg, params)
                     if result then
-                        if not simulatingOffsetCheck and not GLOBAL.GenericAimbotHalted and aimbotHeightOffset.Y > 0 then
+                        if not simulatingOffsetCheck and not GLOBAL.GenericAimbotHalted then
                             simulatingOffsetCheck = true
                             local increment = 0.5
                             while true do
