@@ -155,7 +155,7 @@ local function OnCharacterAdded(character: Model)
     cacheConnections = {}
 
     humanoid.Died:Connect(function()
-        toggleFlyState(false)
+        ToggleFlyState(false)
     end)
 
     table.insert(cacheConnections, character.DescendantAdded:Connect(onDescendantAdded))

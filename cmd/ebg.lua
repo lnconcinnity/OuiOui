@@ -19,6 +19,8 @@ GLOBAL.GenericKeybinds.InverseMovement = Enum.KeyCode.V
 GLOBAL.GenericKeybinds.Brazil = Enum.KeyCode.X
 GLOBAL.GenericKeybinds.Aimbot = Enum.KeyCode.L
 
+GLOBAL.GenericAimbotHalted = false
+GLOBAL.GenericAimbotEnabled = false
 GLOBAL.GenericTargetPlayer = nil
 
 GLOBAL.SpoofedSpells = {} do
@@ -36,7 +38,7 @@ GLOBAL.SpoofedSpells = {} do
     local ResultCollage = {}
     ResultCollage.CFArg = function(offset)
         local result = RaycastToMouse(nil, true)
-        return CFrame.new(result.Position + if offset then offset else Vector3.new(0, 0.25, 0))
+        return CFrame.new(if GLOBAL.GenericAimbotEnabled then GLOBAL.GenericAimbotTargetPosition else result.Position + if offset then offset else Vector3.new(0, 0.25, 0))
     end
 
     Spoof.new("Lightning Barrage", false, function(old)
@@ -103,18 +105,20 @@ AIMBOT_HEADER_HIGHLIGHT.FillColor = Color3.new(1, 0, 1)
 AIMBOT_HEADER_HIGHLIGHT.OutlineTransparency = 0
 AIMBOT_HEADER_HIGHLIGHT.Parent = AIMBOT_HEADER
 
+local aimbotHeightOffset = Vector3.zero
+
 local autoPunchActive = false
 local infStaminaActive = false
 local recordingSpellInfo = false
 local brazilEnabled = false
+local aimbotStepScalesWithDistance = false
 local reverseSpeedEnabled = false
-local aimbotEnabled = false
 
+local simulatingOffsetCheck = false
 local activelyDoingBrazilTroll = false
 local activelyRecordingDamage = false
-local playerMouse = Players.LocalPlayer:GetMouse()
 
-local aimbotMousePosition = Vector3.zero
+local playerMouse = Players.LocalPlayer:GetMouse()
 
 local brazilTeleportDelay = 3.07
 local brazilTargetLocation = 2-- 1 = spawn, 2 = void, 3 = nullzone
@@ -125,11 +129,11 @@ local lastPunchIteration = 0
 local mouseIndexHook; mouseIndexHook = hookmetamethod(playerMouse, '__index', function(self, key)
     if key == "Hit" then
         local result = RaycastToMouse(nil, true)
-        if aimbotEnabled then
+        if GLOBAL.GenericAimbotEnabled then
             local target =  GLOBAL.GenericTargetPlayer
             local humanoid = if target.Character then target.Character:FindFirstChild("Humanoid") else nil
-            if humanoid and humanoid.Health > 0 then
-                return CFrame.new(aimbotMousePosition) * CFrame.lookAt(Vector3.zero, if humanoid.RootPart then (if humanoid.RootPart.AssemblyLinearVelocity:Dot(humanoid.RootPart.AssemblyLinearVelocity) > 0 then humanoid.RootPart.AssemblyLinearVelocity.Unit else humanoid.RootPart.CFrame.LookVector) else workspace.CurrentCamera.CFrame.LookVector)
+            if humanoid and humanoid.Health > 0 and not GLOBAL.GenericAimbotHalted then
+                return CFrame.new(GLOBAL.GenericAimbotTargetPosition) * CFrame.lookAt(Vector3.zero, if humanoid.RootPart then (if humanoid.RootPart.AssemblyLinearVelocity:Dot(humanoid.RootPart.AssemblyLinearVelocity) > 0 then humanoid.RootPart.AssemblyLinearVelocity.Unit else humanoid.RootPart.CFrame.LookVector) else workspace.CurrentCamera.CFrame.LookVector)
             end
         end
         return CFrame.new(result.Position) * CFrame.lookAt(Vector3.zero, result.Normal)
@@ -287,12 +291,22 @@ CommandsAPIService.PostCommand {
 }
 
 CommandsAPIService.PostCommand {
-    Name = "toggleaimbot",
-    Description = "Toggle if you want to your movement to be inverted or not when hit by Ace up the sleeve spell",
+    Name = "togglescaledstep",
+    Description = "Toggle if aimbot prediction will scale with distance",
     Callback = function(out: boolean)
-        aimbotEnabled = if out ~= nil then out else false
-        AIMBOT_HEADER_HIGHLIGHT.Adornee = if aimbotEnabled then AIMBOT_HEADER else nil
-        return (if reverseSpeedEnabled then "Enabled" else "Disabled") .. " aimbot"
+        aimbotStepScalesWithDistance = if out ~= nil then out else false
+        return (if aimbotStepScalesWithDistance then "Enabled" else "Disabled") .. " scaled aimbot prediction"
+    end,
+    Arguments = {out = "boolean"}
+}
+
+CommandsAPIService.PostCommand {
+    Name = "toggleaimbot",
+    Description = "Toggle for aimbot",
+    Callback = function(out: boolean)
+        GLOBAL.GenericAimbotEnabled = if out ~= nil then out else false
+        AIMBOT_HEADER_HIGHLIGHT.Adornee = if GLOBAL.GenericAimbotEnabled then AIMBOT_HEADER else nil
+        return (if GLOBAL.GenericAimbotEnabled then "Enabled" else "Disabled") .. " aimbot"
     end,
     Arguments = {out = "boolean"}
 }
@@ -413,17 +427,61 @@ table.insert(GLOBAL.GenericCleanup, RunService.Heartbeat:Connect(function(dt)
     end
 end))
 table.insert(GLOBAL.GenericCleanup, RunService.Stepped:Connect(function(t, dt)
-    if aimbotEnabled then
+    if GLOBAL.GenericAimbotEnabled then
         local target = GLOBAL.GenericTargetPlayer
         local rootPart = if target.Character then target.Character:FindFirstChild("HumanoidRootPart") else nil
-        if rootPart then
+        if rootPart and GetHumanoidRootPart() then
+            local step = 0.2*if aimbotStepScalesWithDistance then (math.max((rootPart.Position-GetHumanoidRootPart().Position).Magnitude/10, 1)+0.5) else 1
             local v1 = rootPart.AssemblyLinearVelocity
             local t1 = v1/AIMBOT_MASS
-            local t2 = t1 + 0.2*Vector3.one
+            local t2 = t1 + step*Vector3.one
             local v2 = AIMBOT_MASS*t2
-            local d = 0.5*(t2-t1)*(v2+v1)
-            aimbotMousePosition = rootPart.Position+d
-            AIMBOT_HEADER.Position = aimbotMousePosition
+            local d = step*(t2-t1)*(v2+v1)
+
+            local vec = rootPart.Position+d
+            local filter = {target.Character, Players.LocalPlayer.Character}
+            local params = RaycastParams.new()
+            params.FilterDescendantsInstances = filter
+            params.FilterType = Enum.RaycastFilterType.Exclude
+            do
+                -- check if the target position is blocked
+                local result = workspace:Raycast(rootPart.Position, vec-rootPart.Position, params)
+                if result then
+                    vec = result.Position + result.Normal*2
+                end
+            end
+            do
+                -- check for a space we can aim if the line is obscured, otherwise, disable aimbot for the time being
+                local result = workspace:Raycast(vec, GetHumanoidRootPart().Position-vec, params)
+                if result then
+                    if not simulatingOffsetCheck then
+                        simulatingOffsetCheck = true
+                        local increment = 0.5
+                        while true do
+                            local offset = Vector3.new(0, increment, 0)
+                            local targetPos = rootPart.Position + offset
+                            local subResult = workspace:Raycast(targetPos, GetHumanoidRootPart().Position-targetPos, params)
+                            if subResult then
+                                increment += 0.5
+                            elseif increment > 30 then
+                                GLOBAL.GenericAimbotHalted = true
+                            else
+                                GLOBAL.GenericAimbotHalted = false
+                                aimbotHeightOffset = offset
+                                break
+                            end
+                        end
+                        simulatingOffsetCheck = false
+                    end
+                else
+                    GLOBAL.GenericAimbotHalted = false
+                    aimbotHeightOffset = Vector3.zero
+                end
+            end
+
+
+            GLOBAL.GenericAimbotTargetPosition = vec+aimbotHeightOffset
+            AIMBOT_HEADER.Position = GLOBAL.GenericAimbotTargetPosition
         else
             AIMBOT_HEADER.Position = UNRENDER_POSITION
         end
@@ -438,17 +496,17 @@ table.insert(GLOBAL.GenericCleanup, UserInputService.InputBegan:Connect(function
         MakeChatSystemMessage.Out((if autoPunchActive then "Enabled" else "Disabled") .. " auto punch", MakeChatSystemMessage.Colors[2])
     elseif input.KeyCode == GLOBAL.GenericKeybinds.InfStamina then
         infStaminaActive = not infStaminaActive
-        MakeChatSystemMessage.Out((if autoPunchActive then "Enabled" else "Disabled") .. " infinite stamina", MakeChatSystemMessage.Colors[2])
+        MakeChatSystemMessage.Out((if infStaminaActive then "Enabled" else "Disabled") .. " infinite stamina", MakeChatSystemMessage.Colors[2])
     elseif input.KeyCode == GLOBAL.GenericKeybinds.InverseMovement then
         reverseSpeedEnabled = not reverseSpeedEnabled
         for _, connection in ipairs(getconnections(ReverseSpeed.OnClientEvent)) do
             connection[if reverseSpeedEnabled then "Enable" else "Disable"](connection)
         end
-        MakeChatSystemMessage.Out((if autoPunchActive then "Enabled" else "Disabled") .. " movement inversion", MakeChatSystemMessage.Colors[2])
+        MakeChatSystemMessage.Out((if reverseSpeedEnabled then "Enabled" else "Disabled") .. " movement inversion", MakeChatSystemMessage.Colors[2])
     elseif input.KeyCode == GLOBAL.GenericKeybinds.Aimbot then
-        aimbotEnabled = not aimbotEnabled
-        AIMBOT_HEADER_HIGHLIGHT.Adornee = if aimbotEnabled then AIMBOT_HEADER else nil
-        MakeChatSystemMessage.Out((if autoPunchActive then "Enabled" else "Disabled") .. " aimbot", MakeChatSystemMessage.Colors[2])
+        GLOBAL.GenericAimbotEnabled = not GLOBAL.GenericAimbotEnabled
+        AIMBOT_HEADER_HIGHLIGHT.Adornee = if GLOBAL.GenericAimbotEnabled then AIMBOT_HEADER else nil
+        MakeChatSystemMessage.Out((if GLOBAL.GenericAimbotEnabled then "Enabled" else "Disabled") .. " aimbot", MakeChatSystemMessage.Colors[2])
     elseif input.KeyCode == GLOBAL.GenericKeybinds.Brazil then
         if brazilEnabled then
             if not activelyDoingBrazilTroll then
