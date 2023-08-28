@@ -311,21 +311,19 @@ end
 
 local old; old = hookmetamethod(game, '__namecall', function(self, ...)
     if getnamecallmethod() == "FireServer" and self.Name == "SayMessageRequest" then
-        if not ShowCommandsToPublic then
-            local args = {...}
-            local can = true
-            if args[1]:sub(1, 1) == "/" then
-                local contents = string.split(args[1], " ")
-                local _ = table.remove(contents, 1)
-                if hasPrefix(contents[1]) then
-                    can = false
-                end
-            elseif hasPrefix(args[1]) then
+        local args = {...}
+        local can = true
+        if args[1]:sub(1, 1) == "/" then
+            local contents = string.split(args[1], " ")
+            local _ = table.remove(contents, 1)
+            if hasPrefix(contents[1]) then
                 can = false
             end
-            if not can then
-                return old(self, args[1], "System")
-            end
+        elseif hasPrefix(args[1]) then
+            can = false
+        end
+        if not can then
+            return old(self, args[1], "System")
         end
     end
     return old(self, ...)
