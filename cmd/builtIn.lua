@@ -205,9 +205,9 @@ CommandsAPIService.PostCommand {
         if table.find(IGNORE_PACKAGES, name) or IMPORTED_PACKAGES[name] then
             error(("Package %s is already loaded"):format(name))
         end
-        local ok = pcall(require, '/'..name)
+        local ok, err = pcall(require, '/'..name)
         if not ok then
-            error(("Unable to load package %s (package doesn't exist)"):format(name))
+            error(("Unable to load package %s (package doesn't exist) [%s]"):format(name, err))
         end
         return "Package " .. name .. " imported!"
     end,
