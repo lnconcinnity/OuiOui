@@ -452,27 +452,32 @@ table.insert(GLOBAL.GenericCleanup, RunService.Stepped:Connect(function(t, dt)
             end
             do
                 -- check for a space we can aim if the line is obscured, otherwise, disable aimbot for the time being
-                local result = workspace:Raycast(vec, GetHumanoidRootPart().Position-vec, params)
-                if result then
-                    if not simulatingOffsetCheck then
-                        simulatingOffsetCheck = true
-                        local increment = 0.5
-                        while true do
-                            local offset = Vector3.new(0, increment, 0)
-                            local targetPos = rootPart.Position + offset
-                            local subResult = workspace:Raycast(targetPos, GetHumanoidRootPart().Position-targetPos, params)
-                            if subResult then
-                                increment += 0.5
-                            elseif increment > 30 then
-                                GLOBAL.GenericAimbotHalted = true
-                                break
-                            else
-                                GLOBAL.GenericAimbotHalted = false
-                                aimbotHeightOffset = offset
-                                break
+                if (rootPart.Position-GetHumanoidRootPart().Position).Magnitude <= 20 then
+                    local result = workspace:Raycast(vec, GetHumanoidRootPart().Position-vec, params)
+                    if result then
+                        if not simulatingOffsetCheck then
+                            simulatingOffsetCheck = true
+                            local increment = 0.5
+                            while true do
+                                local offset = Vector3.new(0, increment, 0)
+                                local targetPos = rootPart.Position + offset
+                                local subResult = workspace:Raycast(targetPos, GetHumanoidRootPart().Position-targetPos, params)
+                                if subResult then
+                                    increment += 0.5
+                                elseif increment > 30 then
+                                    GLOBAL.GenericAimbotHalted = true
+                                    break
+                                else
+                                    GLOBAL.GenericAimbotHalted = false
+                                    aimbotHeightOffset = offset
+                                    break
+                                end
                             end
+                            simulatingOffsetCheck = false
                         end
-                        simulatingOffsetCheck = false
+                    else
+                        GLOBAL.GenericAimbotHalted = false
+                        aimbotHeightOffset = Vector3.zero
                     end
                 else
                     GLOBAL.GenericAimbotHalted = false
