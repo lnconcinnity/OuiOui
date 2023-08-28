@@ -300,16 +300,16 @@ CommandsAPIService.PostCommand {
             local lastIncomingDamage = 0
             local start = tick()
             local recording = false
-            local hpChanged;
+            local hpChanged, recordingUpdate;
 
             local totalDamage = 0
 
             local function setupRecorder()
-                local conn; conn = RunService.Heartbeat:Connect(function()
+                recordingUpdate = RunService.Heartbeat:Connect(function()
                     local now = tick()
                     if now - lastIncomingDamage >= 3 or now - start >= 10 then
-                        conn:Disconnect()
-                        hpChanged:Disconnect()
+                        if hpChanged then hpChanged:Disconnect() end
+                        if recordingUpdate then recordingUpdate:Disconnect() end
                         activelyRecordingDamage = false
                         if totalDamage <= 0 then
                             MakeChatSystemMessage.Out("No damage was taken within recording time", MakeChatSystemMessage.Colors[1])
@@ -336,6 +336,13 @@ CommandsAPIService.PostCommand {
                     totalDamage = baseHealth - health
                 end
                 _oldHealth = health
+            end)
+
+            target.Destroying:Connect(function()
+                activelyRecordingDamage = false
+                if hpChanged then hpChanged:Disconnect() end
+                if recordingUpdate then recordingUpdate:Disconnect() end
+                MakeChatSystemMessage.Out("Target left the server", MakeChatSystemMessage.Colors[1])
             end)
         else
             MakeChatSystemMessage.Out("Target does not exist", MakeChatSystemMessage.Colors[1])
@@ -400,7 +407,7 @@ table.insert(GLOBAL.GenericCleanup, UserInputService.InputBegan:Connect(function
                         local can = true
                         local t = brazilTeleportDelay
                         repeat t -= task.wait()
-                            if humanoid.Health <= 0 or humanoid.RootPart == nil or not GetHumanoidRootPart() or GetHumanoid().Health <= 0 then
+                            if humanoid.Health <= 0 or humanoid.RootPart == nil or not GetHumanoidRootPart() or GetHumanoid().Health <= 0 or not target then
                                 can = false
                                 break
                             end
