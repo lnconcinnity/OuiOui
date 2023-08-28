@@ -316,6 +316,16 @@ CommandsAPIService.PostCommand {
     end
 }
 
+CommandsAPIService.PostCommand {
+    Name = "lockto",
+    Description = "Set the target player",
+    Callback = function(player: Player)
+        GLOBAL.GenericTargetPlayer = player
+        return "Currently locked to " .. player.Name
+    end,
+    Arguments = {player = "plr"}
+}
+
 do
     RunService:BindToRenderStep("FlyUpdate", Enum.RenderPriority.Input.Value - 1, function(dt)
         if canPlayerFly and flightStateEnabled then

@@ -1,3 +1,4 @@
+local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
@@ -12,8 +13,11 @@ local GetNearestPlayersFromRadius = GLOBAL.GetNearestPlayersFromRadius
 local RaycastToMouse = GLOBAL.RaycastToMouse
 local GetHumanoidRootPart, GetHumanoid = GLOBAL.GetHumanoidRootPart, GLOBAL.GetHumanoid
 
-GLOBAL.GenericKeybinds.AutoPunch = Enum.KeyCode.V
+GLOBAL.GenericKeybinds.AutoPunch = Enum.KeyCode.Z
+GLOBAL.GenericKeybinds.InfStamina = Enum.KeyCode.C
+GLOBAL.GenericKeybinds.InverseMovement = Enum.KeyCode.V
 GLOBAL.GenericKeybinds.Brazil = Enum.KeyCode.X
+GLOBAL.GenericKeybinds.Aimbot = Enum.KeyCode.L
 
 GLOBAL.GenericTargetPlayer = nil
 
@@ -69,6 +73,8 @@ GLOBAL.SpoofedSpells = {} do
     end)
 end
 
+local AIMBOT_MASS = 60 / 1000 -- m=v/t
+local UNRENDER_POSITION = Vector3.yAxis*10e5
 local SPAWN_LOCATIONS_BY_PLACE_IDS = {
     [2569625809] = Vector3.new(-10e5, 100, 0)
 }
@@ -79,19 +85,57 @@ local ReverseSpeed = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Rev
 local DoMagic = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("DoMagic")
 local DoClientMagic = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("DoClientMagic")
 
+local AIMBOT_HEADER = Instance.new("Part")
+AIMBOT_HEADER.Anchored = true
+AIMBOT_HEADER.CanCollide = false
+AIMBOT_HEADER.CastShadow = false
+AIMBOT_HEADER.CFrame = CFrame.identity
+AIMBOT_HEADER.Size = Vector3.one*1
+AIMBOT_HEADER.CanTouch = false
+AIMBOT_HEADER.CanQuery = false
+AIMBOT_HEADER.Material = Enum.Material.Neon
+AIMBOT_HEADER.Color = Color3.new(1, 0, 1)
+AIMBOT_HEADER.Parent = workspace.CurrentCamera
+local AIMBOT_HEADER_HIGHLIGHT = Instance.new("Highlight")
+AIMBOT_HEADER_HIGHLIGHT.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+AIMBOT_HEADER_HIGHLIGHT.FillTransparency = 0
+AIMBOT_HEADER_HIGHLIGHT.FillColor = Color3.new(1, 0, 1)
+AIMBOT_HEADER_HIGHLIGHT.OutlineTransparency = 0
+AIMBOT_HEADER_HIGHLIGHT.Parent = AIMBOT_HEADER
+
 local autoPunchActive = false
 local infStaminaActive = false
 local recordingSpellInfo = false
 local brazilEnabled = false
+local reverseSpeedEnabled = false
+local aimbotEnabled = false
 
 local activelyDoingBrazilTroll = false
 local activelyRecordingDamage = false
+local playerMouse = Players.LocalPlayer:GetMouse()
+
+local aimbotMousePosition = Vector3.zero
 
 local brazilTeleportDelay = 3.07
 local brazilTargetLocation = 2-- 1 = spawn, 2 = void, 3 = nullzone
 local spellNameHistory = {}
 
 local lastPunchIteration = 0
+
+local mouseIndexHook; mouseIndexHook = hookmetamethod(playerMouse, '__index', function(self, key)
+    if key == "Hit" then
+        local result = RaycastToMouse(nil, true)
+        if aimbotEnabled then
+            local target =  GLOBAL.GenericTargetPlayer
+            local humanoid = if target.Character then target.Character:FindFirstChild("Humanoid") else nil
+            if humanoid and humanoid.Health > 0 then
+                return CFrame.new(aimbotMousePosition) * CFrame.lookAt(Vector3.zero, if humanoid.RootPart then (if humanoid.RootPart.AssemblyLinearVelocity:Dot(humanoid.RootPart.AssemblyLinearVelocity) > 0 then humanoid.RootPart.AssemblyLinearVelocity.Unit else humanoid.RootPart.CFrame.LookVector) else workspace.CurrentCamera.CFrame.LookVector)
+            end
+        end
+        return CFrame.new(result.Position) * CFrame.lookAt(Vector3.zero, result.Normal)
+    end
+    return mouseIndexHook
+end)
 
 local namecallHook; namecallHook = hookmetamethod(game, '__namecall', function(self, ...)
     if getnamecallmethod() == "InvokeServer" then
@@ -243,26 +287,27 @@ CommandsAPIService.PostCommand {
 }
 
 CommandsAPIService.PostCommand {
-    Name = "togglereversespeed",
+    Name = "toggleaimbot",
     Description = "Toggle if you want to your movement to be inverted or not when hit by Ace up the sleeve spell",
     Callback = function(out: boolean)
-        local ok = if out ~= nil then out else false
-        for _, connection in ipairs(getconnections(ReverseSpeed.OnClientEvent)) do
-            connection[if ok then "Enable" else "Disable"](connection)
-        end
-        return (if ok then "Enabled" else "Disabled") .. " movement inversion"
+        aimbotEnabled = if out ~= nil then out else false
+        AIMBOT_HEADER_HIGHLIGHT.Adornee = if aimbotEnabled then AIMBOT_HEADER else nil
+        return (if reverseSpeedEnabled then "Enabled" else "Disabled") .. " aimbot"
     end,
     Arguments = {out = "boolean"}
 }
 
 CommandsAPIService.PostCommand {
-    Name = "lockto",
-    Description = "Set the target player",
-    Callback = function(player: Player)
-        GLOBAL.GenericTargetPlayer = player
-        return "Currently locked to " .. player.Name
+    Name = "togglereversespeed",
+    Description = "Toggle if you want to your movement to be inverted or not when hit by Ace up the sleeve spell",
+    Callback = function(out: boolean)
+        reverseSpeedEnabled = if out ~= nil then out else false
+        for _, connection in ipairs(getconnections(ReverseSpeed.OnClientEvent)) do
+            connection[if reverseSpeedEnabled then "Enable" else "Disable"](connection)
+        end
+        return (if reverseSpeedEnabled then "Enabled" else "Disabled") .. " movement inversion"
     end,
-    Arguments = {player = "plr"}
+    Arguments = {out = "boolean"}
 }
 
 CommandsAPIService.PostCommand {
@@ -367,11 +412,43 @@ table.insert(GLOBAL.GenericCleanup, RunService.Heartbeat:Connect(function(dt)
         end
     end
 end))
+table.insert(GLOBAL.GenericCleanup, RunService.Stepped:Connect(function(t, dt)
+    if aimbotEnabled then
+        local target = GLOBAL.GenericTargetPlayer
+        local rootPart = if target.Character then target.Character:FindFirstChild("HumanoidRootPart") else nil
+        if rootPart then
+            local v1 = rootPart.AssemblyLinearVelocity
+            local t1 = v1/AIMBOT_MASS
+            local t2 = t1 + 0.2*Vector3.one
+            local v2 = AIMBOT_MASS*t2
+            local d = 0.5*(t2-t1)*(v2+v1)
+            aimbotMousePosition = rootPart.Position+d
+            AIMBOT_HEADER.Position = aimbotMousePosition
+        else
+            AIMBOT_HEADER.Position = UNRENDER_POSITION
+        end
+    else
+        AIMBOT_HEADER.Position = UNRENDER_POSITION
+    end
+end))
 table.insert(GLOBAL.GenericCleanup, UserInputService.InputBegan:Connect(function(input: InputObject, gpe: boolean)
     if gpe then return end
     if input.KeyCode == GLOBAL.GenericKeybinds.AutoPunch then
         autoPunchActive = not autoPunchActive
         MakeChatSystemMessage.Out((if autoPunchActive then "Enabled" else "Disabled") .. " auto punch", MakeChatSystemMessage.Colors[2])
+    elseif input.KeyCode == GLOBAL.GenericKeybinds.InfStamina then
+        infStaminaActive = not infStaminaActive
+        MakeChatSystemMessage.Out((if autoPunchActive then "Enabled" else "Disabled") .. " infinite stamina", MakeChatSystemMessage.Colors[2])
+    elseif input.KeyCode == GLOBAL.GenericKeybinds.InverseMovement then
+        reverseSpeedEnabled = not reverseSpeedEnabled
+        for _, connection in ipairs(getconnections(ReverseSpeed.OnClientEvent)) do
+            connection[if reverseSpeedEnabled then "Enable" else "Disable"](connection)
+        end
+        MakeChatSystemMessage.Out((if autoPunchActive then "Enabled" else "Disabled") .. " movement inversion", MakeChatSystemMessage.Colors[2])
+    elseif input.KeyCode == GLOBAL.GenericKeybinds.Aimbot then
+        aimbotEnabled = not aimbotEnabled
+        AIMBOT_HEADER_HIGHLIGHT.Adornee = if aimbotEnabled then AIMBOT_HEADER else nil
+        MakeChatSystemMessage.Out((if autoPunchActive then "Enabled" else "Disabled") .. " aimbot", MakeChatSystemMessage.Colors[2])
     elseif input.KeyCode == GLOBAL.GenericKeybinds.Brazil then
         if brazilEnabled then
             if not activelyDoingBrazilTroll then
