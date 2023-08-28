@@ -13,6 +13,7 @@ local OUT_ERROR_COLOR = Color3.fromRGB(255, 22, 0)
 local OUT_WARN_COLOR = Color3.fromRGB(255, 199, 50)
 local OUT_INFO_COLOR = Color3.fromRGB(198, 255, 244)
 
+local ShowCommandsToPublic = false
 local CommandPrefix = ";"
 
 local require do
@@ -307,6 +308,28 @@ local Player = Players.LocalPlayer
 local function hasPrefix(text: string)
     return text:sub(1, 1) == CommandPrefix and text:sub(2, 2) ~= CommandPrefix
 end
+
+local old; old = hookmetamethod(game, '__namecall', function(self, ...)
+    if getnamecallmethod() == "FireServer" and self.Name == "SayMessageRequest" then
+        if not ShowCommandsToPublic then
+            local args = {...}
+            local can = true
+            if args[1]:sub(1, 1) == "/" then
+                local contents = string.split(args[1], " ")
+                local _ = table.remove(contents, 1)
+                if hasPrefix(contents[1]) then
+                    can = false
+                end
+            elseif hasPrefix(args[1]) then
+                can = false
+            end
+            if not can then
+                return old(self, args[1], "System")
+            end
+        end
+    end
+    return old(self, ...)
+end)
 
 local function onPlayerChatted(message: string)
     if message:sub(1, 1) == "/" then
