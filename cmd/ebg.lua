@@ -137,7 +137,8 @@ local spellNameHistory = {}
 
 local lastPunchIteration = 0
 
-local mouseIndexHook; mouseIndexHook = hookmetamethod(playerMouse, '__index', function(self, key)
+local mouseIndexHook = getrawmetatable(game).__namecall
+hookmetamethod(playerMouse, '__index', function(self, key)
     if key == "Hit" then
         local result = RaycastToMouse(nil, true)
         if GLOBAL.GenericAimbotEnabled then
@@ -152,7 +153,8 @@ local mouseIndexHook; mouseIndexHook = hookmetamethod(playerMouse, '__index', fu
     return mouseIndexHook(self, key)
 end)
 
-local namecallHook; namecallHook = hookmetamethod(game, '__namecall', function(self, ...)
+local namecallHook = getrawmetatable(game).__namecall
+hookmetamethod(game, '__namecall', function(self, ...)
     if getnamecallmethod() == "InvokeServer" then
         if self.Name == "DoMagic" then
             local args = {...}
