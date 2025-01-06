@@ -21,7 +21,7 @@ local require do
     local SEPERATOR = "/"
     local EXTENSION = ".lua"
     local ORIGIN = string.format("https://raw.githubusercontent.com/%s/OuiOui/%s/cmd",
-        "weeeeee8", -- user
+        "lnconcinnity", -- user
         "main" -- branch
     )
     local cache = {}
