@@ -203,11 +203,11 @@ CommandsAPIService.PostCommand {
     Callback = function(name: string)
         assert(name and #name > 0, "Name must not be nil or an empty string")
         if table.find(IGNORE_PACKAGES, name) or IMPORTED_PACKAGES[name] then
-            error(("Package %s is already loaded"):format(name))
+            return ("Package %s is already loaded"):format(name)
         end
-        local ok, err = pcall(require, '/'..name)
+        local ok, err = pcall(import, '/'..name)
         if not ok then
-            error(("Unable to load package %s (package doesn't exist) [%s]"):format(name, err))
+            return ("Unable to load package %s (package doesn't exist) [%s]"):format(name, err)
         end
         return "Package " .. name .. " imported!"
     end,

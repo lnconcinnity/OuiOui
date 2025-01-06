@@ -13,7 +13,6 @@ local OUT_ERROR_COLOR = Color3.fromRGB(255, 22, 0)
 local OUT_WARN_COLOR = Color3.fromRGB(255, 199, 50)
 local OUT_INFO_COLOR = Color3.fromRGB(198, 255, 244)
 
-local ShowCommandsToPublic = false
 local CommandPrefix = ";"
 
 local require do
@@ -52,6 +51,7 @@ local require do
     end
 
     getgenv().require = require
+    getgenv().import = require
 end
 
 local function sendOutMessageToChat(text: string, color: Color3?, textSize: number?)
